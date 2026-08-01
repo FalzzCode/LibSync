@@ -7,7 +7,7 @@ Dokumen ini untuk server production. Jangan salin file .env lokal karena berisi 
 1. Salin .env.production.example menjadi .env.
 2. Isi APP_KEY melalui perintah php artisan key:generate.
 3. Isi URL HTTPS final, database production, dan kredensial Google OAuth.
-4. Pastikan APP_ENV=production, APP_DEBUG=false, dan SESSION_SECURE_COOKIE=true.
+4. Pastikan APP_ENV=production, APP_DEBUG=false, SESSION_SECURE_COOKIE=true, dan LOG_STACK=stderr agar error production terlihat di Railway Logs.
 5. Di Google Cloud, tambahkan URL callback dari nilai GOOGLE_REDIRECT_URI sebagai Authorized redirect URI.
 
 ## 2. Instalasi aplikasi

@@ -17,6 +17,8 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
+    private const GOOGLE_LOGIN_ERROR = 'Login Google belum dapat diselesaikan. Muat ulang halaman lalu coba lagi.';
+
     // Menampilkan halaman form login
     public function showLoginForm(): View
     {
@@ -48,58 +50,65 @@ class AuthController extends Controller
 
     public function redirectToGoogle(): RedirectResponse
     {
-        if (! config('services.google.client_id') || ! config('services.google.client_secret')) {
+        if (! $this->googleIsConfigured()) {
             return back()->withErrors([
-                'email' => 'Login Google belum dikonfigurasi. Hubungi administrator perpustakaan.',
+                'email' => 'Login Google belum dikonfigurasi. Pastikan Client ID, Client Secret, dan URL callback sudah diisi.',
             ]);
         }
 
-        return Socialite::driver('google')->redirect();
+        try {
+            return Socialite::driver('google')->redirect();
+        } catch (\Throwable $exception) {
+            $this->logGoogleFailure('redirect', $exception, request());
+
+            return redirect()->route('login')->withErrors([
+                'email' => self::GOOGLE_LOGIN_ERROR,
+            ]);
+        }
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse
     {
         try {
             $googleUser = Socialite::driver('google')->user();
+            $allowedGoogleDomain = config('services.google.allowed_domain');
+            if ($allowedGoogleDomain && ! str_ends_with(strtolower((string) $googleUser->getEmail()), '@'.strtolower($allowedGoogleDomain))) {
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Gunakan akun Google dengan domain sekolah yang terdaftar.',
+                ]);
+            }
+
+            $activationMemberId = $request->session()->pull('student_activation_member_id');
+
+            if ($activationMemberId) {
+                return $this->activateStudentWithGoogle($request, (int) $activationMemberId, $googleUser);
+            }
+
+            $user = User::query()->where('google_id', $googleUser->getId())->orWhere('email', $googleUser->getEmail())->first();
+
+            if (! $user) {
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Email Google ini belum terdaftar di perpustakaan. Minta petugas untuk membuat atau menghubungkan akun Anda.',
+                ]);
+            }
+
+            $user->forceFill([
+                'google_id' => $googleUser->getId(),
+                'avatar_url' => $googleUser->getAvatar(),
+                'email_verified_at' => $user->email_verified_at ?? now(),
+            ])->save();
+
+            Auth::login($user, true);
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('dashboard'));
         } catch (\Throwable $exception) {
-            Log::warning('Google login failed.', ['message' => $exception->getMessage()]);
+            $this->logGoogleFailure('callback', $exception, $request);
 
             return redirect()->route('login')->withErrors([
-                'email' => 'Login Google tidak dapat diproses. Silakan coba lagi.',
+                'email' => self::GOOGLE_LOGIN_ERROR,
             ]);
         }
-
-        $allowedGoogleDomain = config('services.google.allowed_domain');
-        if ($allowedGoogleDomain && ! str_ends_with(strtolower((string) $googleUser->getEmail()), '@'.strtolower($allowedGoogleDomain))) {
-            return redirect()->route('login')->withErrors([
-                'email' => 'Gunakan akun Google dengan domain sekolah yang terdaftar.',
-            ]);
-        }
-
-        $activationMemberId = $request->session()->pull('student_activation_member_id');
-
-        if ($activationMemberId) {
-            return $this->activateStudentWithGoogle($request, (int) $activationMemberId, $googleUser);
-        }
-
-        $user = User::query()->where('google_id', $googleUser->getId())->orWhere('email', $googleUser->getEmail())->first();
-
-        if (! $user) {
-            return redirect()->route('login')->withErrors([
-                'email' => 'Email Google ini belum terdaftar di perpustakaan. Minta petugas untuk membuat atau menghubungkan akun Anda.',
-            ]);
-        }
-
-        $user->forceFill([
-            'google_id' => $googleUser->getId(),
-            'avatar_url' => $googleUser->getAvatar(),
-            'email_verified_at' => $user->email_verified_at ?? now(),
-        ])->save();
-
-        Auth::login($user, true);
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('dashboard'));
     }
 
     private function activateStudentWithGoogle(Request $request, int $memberId, mixed $googleUser): RedirectResponse
@@ -163,5 +172,22 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    private function googleIsConfigured(): bool
+    {
+        return filled(config('services.google.client_id'))
+            && filled(config('services.google.client_secret'))
+            && filled(config('services.google.redirect'));
+    }
+
+    private function logGoogleFailure(string $stage, \Throwable $exception, Request $request): void
+    {
+        Log::error('Google OAuth flow failed.', [
+            'stage' => $stage,
+            'exception' => $exception::class,
+            'message' => $exception->getMessage(),
+            'path' => $request->path(),
+        ]);
     }
 }

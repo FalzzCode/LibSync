@@ -5,6 +5,12 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
+$stackChannels = explode(',', (string) env('LOG_STACK', env('APP_ENV') === 'production' ? 'stderr' : 'single'));
+
+if (env('APP_ENV') === 'production' && ! in_array('stderr', $stackChannels, true)) {
+    $stackChannels[] = 'stderr';
+}
+
 return [
 
     /*
@@ -54,7 +60,9 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            // Containers such as Railway expose stderr in deployment logs;
+            // keep file logs locally while making production failures visible.
+            'channels' => $stackChannels,
             'ignore_exceptions' => false,
         ],
 

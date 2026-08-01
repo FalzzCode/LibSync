@@ -6,6 +6,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -24,6 +25,25 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // The Google provider returns to this app through a browser redirect.
+        // If an infrastructure failure happens before the controller can catch
+        // it (for example while a session is being read), avoid showing
+        // Laravel's generic production 500 page. The exception is still sent
+        // to Railway stderr with a safe, actionable label.
+        $exceptions->render(function (Throwable $exception, Request $request): ?Response {
+            if (! $request->is('auth/google*') || $exception instanceof DecryptException) {
+                return null;
+            }
+
+            Log::error('Unhandled Google OAuth request failure.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+                'path' => $request->path(),
+            ]);
+
+            return response()->view('errors.oauth-unavailable', status: 503);
+        });
+
         // A browser can keep an encrypted session cookie from before APP_KEY
         // or session settings changed. Clear only that stale cookie instead
         // of returning a production 500 during the Google callback.

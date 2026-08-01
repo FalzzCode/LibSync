@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
 use Tests\TestCase;
@@ -64,5 +65,16 @@ class GoogleOAuthTest extends TestCase
         $this->get(route('auth.google.callback'))
             ->assertRedirect(route('login'))
             ->assertSessionHasErrors('email');
+    }
+
+    public function test_unhandled_oauth_errors_render_a_safe_page_instead_of_a_generic_500(): void
+    {
+        Route::get('/auth/google/testing-failure', function () {
+            throw new \RuntimeException('Simulated middleware failure');
+        });
+
+        $this->get('/auth/google/testing-failure')
+            ->assertStatus(503)
+            ->assertSee('Login Google belum dapat diteruskan.');
     }
 }

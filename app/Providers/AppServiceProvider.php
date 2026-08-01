@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Railway serves the application through an HTTPS edge proxy. Keep
+        // generated asset(), route(), and redirect URLs secure even when the
+        // upstream PHP process receives the request over HTTP.
+        $appUrl = (string) config('app.url');
+
+        if ($this->app->environment('production') || str_starts_with($appUrl, 'https://')) {
+            URL::forceScheme('https');
+        }
     }
 }

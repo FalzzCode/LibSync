@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
@@ -87,6 +90,23 @@ class GoogleOAuthTest extends TestCase
             ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
             ->assertRedirect(route('login'))
             ->assertSessionHasErrors('email');
+    }
+
+    public function test_google_callback_explains_when_the_client_secret_is_rejected(): void
+    {
+        $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
+        $driver->shouldReceive('user')->once()->andThrow(new ClientException(
+            'Google rejected the client',
+            new Request('POST', 'https://oauth2.googleapis.com/token'),
+            new Response(401, [], '{"error":"invalid_client"}'),
+        ));
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
+
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('email', 'Kredensial Google di server tidak cocok. Administrator perlu memperbarui Client Secret di Railway.');
     }
 
     public function test_google_callback_rejects_a_missing_or_mismatched_state_without_contacting_google(): void

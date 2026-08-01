@@ -6,6 +6,7 @@ use App\Http\Requests\LoginRequest;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -231,17 +232,37 @@ class AuthController extends Controller
             return 'Sesi login Google telah berakhir atau berubah. Tekan tombol Google sekali lagi dari halaman ini.';
         }
 
-        $message = strtolower($exception->getMessage());
+        $providerError = $this->googleProviderErrorCode($exception);
 
-        if (str_contains($message, 'invalid_client')) {
+        if (in_array($providerError, ['invalid_client', 'unauthorized_client'], true)) {
             return 'Kredensial Google di server tidak cocok. Administrator perlu memperbarui Client Secret di Railway.';
         }
 
-        if (str_contains($message, 'invalid_grant')) {
+        if ($providerError === 'invalid_grant') {
             return 'Kode login Google sudah tidak berlaku. Mulai login kembali dari tombol Google.';
         }
 
         return self::GOOGLE_LOGIN_ERROR;
+    }
+
+    private function googleProviderErrorCode(\Throwable $exception): ?string
+    {
+        if ($exception instanceof RequestException && $exception->hasResponse()) {
+            $payload = json_decode((string) $exception->getResponse()->getBody(), true);
+            $error = is_array($payload) ? ($payload['error'] ?? null) : null;
+
+            if (is_string($error) && $error !== '') {
+                return strtolower($error);
+            }
+        }
+
+        foreach (['invalid_client', 'unauthorized_client', 'invalid_grant'] as $error) {
+            if (str_contains(strtolower($exception->getMessage()), $error)) {
+                return $error;
+            }
+        }
+
+        return null;
     }
 
     private function logGoogleFailure(string $stage, \Throwable $exception, Request $request): void

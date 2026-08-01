@@ -1,0 +1,118 @@
+.mobile-tabbar { display: none; }
+
+@media (max-width: 760px) {
+    .layout__sidebar,
+    .header,
+    .mobile-tabbar {
+        transition: transform .18s ease, opacity .14s ease !important;
+    }
+    html.mobile-is-loading .layout__sidebar {
+        transform: translateX(-108%) !important;
+        opacity: 0;
+        pointer-events: none;
+    }
+    html.mobile-is-loading .sidebar-overlay,
+    html.mobile-is-loading .header,
+    html.mobile-is-loading .mobile-tabbar {
+        opacity: 0;
+        pointer-events: none;
+    }
+    html.mobile-is-loading .page-loader {
+        inset: 0;
+        z-index: 200;
+    }
+    html.mobile-is-loading .page-loader__main { padding-top: 86px; }
+
+    .main-content { padding: 20px 16px 94px; }
+    .header { padding: 0 16px; }
+
+    .page-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .page-header__actions { width: auto; flex-wrap: nowrap; }
+    .page-header__actions .btn--primary { flex: 0 0 auto; white-space: nowrap; padding-inline: 12px; }
+    .page-header h1 { font-size: 29px; }
+    .page-header p:not(.eyebrow) { font-size: 13px; line-height: 1.45; }
+
+    .filter-bar { gap: 10px; margin-bottom: 14px; }
+    .filter-bar__controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .filter-bar select { min-width: 0; width: 100%; }
+    .filter-bar__controls .btn,
+    .filter-bar__controls .filter-reset { grid-column: span 1; min-width: 0; }
+    .filter-bar__controls .check-field { grid-column: 1 / -1; margin: 0; }
+
+    .stats-grid,
+    .transaction-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .stat-card { min-height: 94px; align-items: flex-start; }
+    .stat-card em { display: none; }
+
+    .quick-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .quick-actions a { min-height: 112px; padding: 12px 10px; }
+    .quick-actions strong { font-size: 12px; line-height: 1.25; margin-top: 9px; }
+    .quick-actions small { display: none; }
+    .action-panel { padding: 19px 16px; }
+    .tip-card { padding: 19px 16px; }
+
+    .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px; }
+    .form-group--wide { grid-column: 1 / -1; }
+    .form-card__header { padding: 19px 18px 15px; }
+    .form-actions { padding: 14px 18px; }
+    .form-actions .btn { flex: 1; padding-inline: 10px; }
+
+    .detail-card__content { padding: 19px; }
+    .detail-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 19px 0; }
+    .detail-list dd { overflow-wrap: anywhere; }
+
+    .table-card__meta { gap: 8px; align-items: flex-start; }
+    .table-card__meta span:last-child { text-align: right; }
+
+    .mobile-tabbar {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        z-index: 40;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding: 6px;
+        border: 1px solid rgba(77, 112, 101, .45);
+        border-radius: 18px;
+        background: rgba(248, 251, 249, .96);
+        box-shadow: 0 12px 30px rgba(11, 35, 28, .16);
+    }
+    .mobile-tabbar--student { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .mobile-tabbar a,
+    .mobile-tabbar button {
+        min-height: 52px;
+        padding: 5px 2px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: #527069;
+        display: grid;
+        place-items: center;
+        gap: 2px;
+        font: 700 10px/1 var(--font);
+        text-decoration: none;
+    }
+    .mobile-tabbar span { font-size: 17px; line-height: 1; }
+    .mobile-tabbar .is-active { color: #174039; background: #dceee6; }
+    :root[data-theme="dark"] .mobile-tabbar { background: rgba(24, 43, 36, .97); border-color: #426258; box-shadow: 0 12px 30px rgba(0, 0, 0, .35); }
+    :root[data-theme="dark"] .mobile-tabbar a,
+    :root[data-theme="dark"] .mobile-tabbar button { color: #b8cbc4; }
+    :root[data-theme="dark"] .mobile-tabbar .is-active { color: #eff8f3; background: #31584c; }
+}
+
+@media (max-width: 360px) {
+    .page-header { display: flex; align-items: flex-start; }
+    .page-header__actions { width: 100%; }
+    .page-header__actions .btn--primary { flex: 1; }
+    .form-grid { grid-template-columns: 1fr; }
+    .detail-list { grid-template-columns: 1fr; }
+    .quick-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .quick-actions a { min-height: 103px; padding-inline: 7px; }
+}

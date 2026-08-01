@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\CategoryRequest;
+use App\Models\Category;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+
+class CategoryController extends Controller
+{
+    // Menampilkan daftar semua kategori
+    public function index(): View
+    {
+        $categories = Category::latest()->get();
+
+        return view('categories.index', compact('categories'));
+    }
+
+    // Menampilkan form tambah kategori
+    public function create(): View
+    {
+        return view('categories.create');
+    }
+
+    // Menyimpan kategori baru
+    public function store(CategoryRequest $request): RedirectResponse
+    {
+        Category::create($request->validated());
+
+        return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan.');
+    }
+
+    // Menampilkan form edit kategori
+    public function edit(Category $category): View
+    {
+        return view('categories.edit', compact('category'));
+    }
+
+    // Memperbarui kategori
+    public function update(CategoryRequest $request, Category $category): RedirectResponse
+    {
+        $category->update($request->validated());
+
+        return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui.');
+    }
+
+    // Menghapus kategori
+    public function destroy(Category $category): RedirectResponse
+    {
+        if ($category->books()->exists()) {
+            return back()->with('error', 'Kategori yang masih memiliki buku tidak dapat dihapus.');
+        }
+
+        $category->delete();
+
+        return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus.');
+    }
+}

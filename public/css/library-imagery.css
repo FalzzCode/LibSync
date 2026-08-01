@@ -1,0 +1,56 @@
+.hero-card,
+.student-hero,
+:root[data-theme="dark"] .hero-card,
+:root[data-theme="dark"] .student-hero {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background-color: #173d3a;
+    background-image:
+        linear-gradient(100deg, rgba(11, 47, 41, .90) 0%, rgba(14, 65, 56, .76) 48%, rgba(17, 61, 52, .36) 100%),
+        url('/images/library-hero-optimized.webp');
+    background-position: center, center 52%;
+    background-size: cover;
+}
+
+/* Dashboard imagery remains progressive; the student hero always keeps its visual context. */
+.student-hero,
+:root[data-theme="dark"] .student-hero {
+    background-image:
+        linear-gradient(100deg, rgba(11, 43, 37, .86) 0%, rgba(14, 53, 45, .70) 49%, rgba(16, 48, 42, .34) 100%),
+        url('/images/library-hero-optimized.webp');
+    background-position: center, center 52%;
+    background-size: cover;
+}
+
+.hero-card::before,
+.student-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(135deg, transparent 60%, rgba(215, 155, 76, .13));
+    pointer-events: none;
+}
+
+.hero-card__ornament { display: none; }
+
+.hero-card__ornament,
+.student-hero__mark,
+.student-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 760px) {
+    .hero-card,
+    .student-hero,
+    :root[data-theme="dark"] .hero-card,
+    :root[data-theme="dark"] .student-hero {
+        background-image:
+            linear-gradient(105deg, rgba(11, 43, 37, .88) 0%, rgba(14, 53, 45, .74) 58%, rgba(16, 48, 42, .42) 100%),
+        url('/images/library-hero-optimized.webp');
+        background-position: center, 64% center;
+        background-size: cover;
+    }
+}

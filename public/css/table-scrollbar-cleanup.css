@@ -1,0 +1,11 @@
+/* Keep wide data reachable without leaving a distracting horizontal scrollbar visible. */
+.table-wrapper {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.table-wrapper::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}

@@ -1,0 +1,10 @@
+iconify-icon.solar-icon {
+    display: inline-flex;
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: -.2em;
+    color: currentColor;
+}
+.sidebar__link > span .solar-icon,
+.mobile-tabbar span .solar-icon { width: 1.3em; height: 1.3em; vertical-align: middle; }
+.icon-button .solar-icon { width: 1.05em; height: 1.05em; vertical-align: middle; }

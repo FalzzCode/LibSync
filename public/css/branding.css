@@ -1,0 +1,15 @@
+/* LibSync wordmark: refined editorial character without adding a font download. */
+.brand-wordmark,
+.brand-eyebrow { font-family: var(--serif); }
+.sidebar__brand .brand-wordmark { font-size:22px;line-height:.95;letter-spacing:-.065em;font-weight:700; }
+.brand-eyebrow { font-size:15px;font-weight:700;letter-spacing:-.035em;text-transform:none; }
+.brand-mark { font-family:var(--serif);font-size:13px;letter-spacing:-.08em; }
+.brand-logo { width:42px;height:42px;padding:4px;flex:0 0 auto;display:grid;place-items:center;background:#173d3a;border:1px solid rgba(255,255,255,.16);border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.18);transform:rotate(-4deg);transition:transform .25s ease; }
+.brand-logo img { width:100%;height:100%;object-fit:contain; }
+.sidebar__brand:hover .brand-logo { transform:rotate(0) translateY(-2px); }
+.sidebar__link--fines { color:#f0aaa4; }
+.sidebar__link--fines:hover { color:#fff1ef;background:rgba(182,64,58,.22); }
+.sidebar__link--fines.sidebar__link--active { color:#9f312c;background:#fff0ee; }
+.login__brand .brand-logo { width:58px;height:58px;padding:6px;margin-bottom:20px; }
+.brand-logo--mobile { display:none; }
+@media (max-width:760px){.sidebar__brand .brand-wordmark{font-size:20px}.brand-logo--mobile{display:grid;margin-bottom:30px}}

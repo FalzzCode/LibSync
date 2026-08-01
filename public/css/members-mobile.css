@@ -1,0 +1,40 @@
+.member-class-mobile { display: none; }
+.member-avatar, .user-avatar { width: 32px !important; height: 32px !important; max-width: 32px !important; min-width: 32px; flex: 0 0 32px !important; border-radius: 50%; object-fit: cover; background: #e2eee8; }
+
+@media (max-width: 760px) {
+    .members-table-card .table-wrapper { overflow: visible; }
+    .members-table-card .data-table,
+    .members-table-card .data-table tbody,
+    .members-table-card .data-table tr,
+    .members-table-card .data-table td { display: block; width: 100%; }
+    .members-table-card .data-table thead { display: none; }
+    .members-table-card .data-table tbody { padding: 8px; }
+    .members-table-card .data-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+    .members-table-card .data-table tr + tr { margin-top: 8px; }
+    .members-table-card .data-table td { padding: 0; border: 0; }
+    .members-table-card .data-table td:nth-child(1) { min-width: 0; }
+    .members-table-card .data-table td:nth-child(2),
+    .members-table-card .data-table td:nth-child(3),
+    .members-table-card .data-table td:nth-child(4) { display: none; }
+    .members-table-card .data-table td:nth-child(5) { width: auto; }
+    .members-table-card .person-cell { min-width: 0; gap: 9px; align-items: center; }
+    .members-table-card .person-cell > div { min-width: 0; }
+    .members-table-card .person-cell strong,
+    .members-table-card .person-cell small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .members-table-card .person-cell > span { flex: 0 0 auto; width: 30px; height: 30px; }
+    .members-table-card .member-avatar { width: 30px !important; height: 30px !important; max-width: 30px !important; min-width: 30px; flex-basis: 30px !important; }
+    .members-table-card .member-class-mobile { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .members-table-card .table-actions { gap: 5px; justify-content: flex-end; }
+    .members-table-card .icon-button { width: 30px; height: 30px; }
+    .members-table-card .empty-state { padding: 28px 14px; }
+    :root[data-theme="dark"] .members-table-card .data-table tr { background: #22342f; }
+}

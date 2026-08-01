@@ -1,0 +1,18 @@
+.layout__sidebar {
+    height: 100vh;
+    height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #5b8178 transparent;
+}
+
+.layout__sidebar::-webkit-scrollbar { width: 7px; }
+.layout__sidebar::-webkit-scrollbar-track { background: transparent; }
+.layout__sidebar::-webkit-scrollbar-thumb { background: #5b8178; border-radius: 999px; }
+.layout__sidebar::-webkit-scrollbar-thumb:hover { background: #83a99e; }
+
+@media (max-width: 760px) {
+    .layout__sidebar { -webkit-overflow-scrolling: touch; }
+}

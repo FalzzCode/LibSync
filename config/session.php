@@ -129,7 +129,10 @@ return [
 
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
+        // Version the default cookie name so a deployment that rotates APP_KEY
+        // or session encryption settings never attempts to decrypt old browser
+        // sessions from a previous release.
+        Str::slug((string) env('APP_NAME', 'laravel')).'-session-v2'
     ),
 
     /*

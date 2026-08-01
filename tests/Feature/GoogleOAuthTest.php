@@ -54,6 +54,10 @@ class GoogleOAuthTest extends TestCase
             'id' => $staff->id,
             'google_id' => 'google-staff-1',
         ]);
+
+        // Confirm a successful Google callback can reach the destination too;
+        // a dashboard error after login must never look like an OAuth failure.
+        $this->get(route('dashboard'))->assertOk();
     }
 
     public function test_google_callback_returns_to_login_when_the_provider_fails(): void

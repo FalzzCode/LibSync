@@ -9,15 +9,19 @@ use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 
 class AuthController extends Controller
 {
-    private const GOOGLE_LOGIN_ERROR = 'Login Google belum dapat diselesaikan. Muat ulang halaman lalu coba lagi.';
+    private const GOOGLE_LOGIN_ERROR = 'Koneksi ke Google belum dapat diselesaikan. Mulai lagi dari tombol Google di bawah.';
+
+    private const GOOGLE_STATE_COOKIE = 'libsync-google-oauth-state';
 
     // Menampilkan halaman form login
     public function showLoginForm(): View
@@ -48,7 +52,7 @@ class AuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    public function redirectToGoogle(): RedirectResponse
+    public function redirectToGoogle(Request $request): RedirectResponse
     {
         if (! $this->googleIsConfigured()) {
             return back()->withErrors([
@@ -57,7 +61,26 @@ class AuthController extends Controller
         }
 
         try {
-            return Socialite::driver('google')->redirect();
+            // The normal Socialite state lives in the Laravel session. Some
+            // mobile browsers can replace that session while returning from
+            // accounts.google.com. Keep the same CSRF protection in a short
+            // lived, encrypted first-party cookie instead.
+            $state = Str::random(64);
+            $response = $this->googleProvider()
+                ->with(['state' => $state])
+                ->redirect();
+
+            return $response->withCookie(cookie(
+                self::GOOGLE_STATE_COOKIE,
+                $state,
+                10,
+                '/',
+                null,
+                $request->isSecure(),
+                true,
+                false,
+                'lax',
+            ));
         } catch (\Throwable $exception) {
             $this->logGoogleFailure('redirect', $exception, request());
 
@@ -70,7 +93,8 @@ class AuthController extends Controller
     public function handleGoogleCallback(Request $request): RedirectResponse
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            $this->ensureGoogleStateIsValid($request);
+            $googleUser = $this->googleProvider()->user();
             $allowedGoogleDomain = config('services.google.allowed_domain');
             if ($allowedGoogleDomain && ! str_ends_with(strtolower((string) $googleUser->getEmail()), '@'.strtolower($allowedGoogleDomain))) {
                 return redirect()->route('login')->withErrors([
@@ -106,8 +130,10 @@ class AuthController extends Controller
             $this->logGoogleFailure('callback', $exception, $request);
 
             return redirect()->route('login')->withErrors([
-                'email' => self::GOOGLE_LOGIN_ERROR,
+                'email' => $this->googleFailureMessage($exception),
             ]);
+        } finally {
+            Cookie::queue(Cookie::forget(self::GOOGLE_STATE_COOKIE));
         }
     }
 
@@ -179,6 +205,43 @@ class AuthController extends Controller
         return filled(config('services.google.client_id'))
             && filled(config('services.google.client_secret'))
             && filled(config('services.google.redirect'));
+    }
+
+    /**
+     * @return AbstractProvider
+     */
+    private function googleProvider()
+    {
+        return Socialite::driver('google')->stateless();
+    }
+
+    private function ensureGoogleStateIsValid(Request $request): void
+    {
+        $cookieState = (string) $request->cookie(self::GOOGLE_STATE_COOKIE);
+        $requestState = (string) $request->input('state');
+
+        if ($cookieState === '' || $requestState === '' || ! hash_equals($cookieState, $requestState)) {
+            throw new \RuntimeException('invalid_oauth_state');
+        }
+    }
+
+    private function googleFailureMessage(\Throwable $exception): string
+    {
+        if ($exception->getMessage() === 'invalid_oauth_state') {
+            return 'Sesi login Google telah berakhir atau berubah. Tekan tombol Google sekali lagi dari halaman ini.';
+        }
+
+        $message = strtolower($exception->getMessage());
+
+        if (str_contains($message, 'invalid_client')) {
+            return 'Kredensial Google di server tidak cocok. Administrator perlu memperbarui Client Secret di Railway.';
+        }
+
+        if (str_contains($message, 'invalid_grant')) {
+            return 'Kode login Google sudah tidak berlaku. Mulai login kembali dari tombol Google.';
+        }
+
+        return self::GOOGLE_LOGIN_ERROR;
     }
 
     private function logGoogleFailure(string $stage, \Throwable $exception, Request $request): void

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
@@ -31,6 +32,19 @@ class GoogleOAuthTest extends TestCase
             ->assertSessionHasErrors('email');
     }
 
+    public function test_google_redirect_uses_a_short_lived_first_party_state_cookie(): void
+    {
+        $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
+        $driver->shouldReceive('with')->once()->with(Mockery::on(fn (array $parameters) => isset($parameters['state']) && strlen($parameters['state']) === 64))->andReturnSelf();
+        $driver->shouldReceive('redirect')->once()->andReturn(new RedirectResponse('https://accounts.google.test/oauth'));
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
+
+        $this->get(route('auth.google.redirect'))
+            ->assertRedirect('https://accounts.google.test/oauth')
+            ->assertCookie('libsync-google-oauth-state');
+    }
+
     public function test_google_callback_signs_in_a_registered_staff_account(): void
     {
         $staff = User::factory()->create([
@@ -43,10 +57,12 @@ class GoogleOAuthTest extends TestCase
         $googleUser->shouldReceive('getEmail')->andReturn('staff@example.test');
         $googleUser->shouldReceive('getAvatar')->andReturn('https://example.test/avatar.png');
         $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
         $driver->shouldReceive('user')->once()->andReturn($googleUser);
         Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
 
-        $this->get(route('auth.google.callback'))
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
             ->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($staff);
@@ -63,10 +79,20 @@ class GoogleOAuthTest extends TestCase
     public function test_google_callback_returns_to_login_when_the_provider_fails(): void
     {
         $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
         $driver->shouldReceive('user')->once()->andThrow(new \RuntimeException('Provider unavailable'));
         Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
 
-        $this->get(route('auth.google.callback'))
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('email');
+    }
+
+    public function test_google_callback_rejects_a_missing_or_mismatched_state_without_contacting_google(): void
+    {
+        $this->withCookie('libsync-google-oauth-state', 'original-google-state')
+            ->get(route('auth.google.callback', ['state' => 'different-google-state']))
             ->assertRedirect(route('login'))
             ->assertSessionHasErrors('email');
     }

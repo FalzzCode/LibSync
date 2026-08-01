@@ -55,11 +55,13 @@ class StudentActivationTest extends TestCase
         $googleUser->shouldReceive('getEmail')->andReturn('siswa.google@example.test');
         $googleUser->shouldReceive('getAvatar')->andReturn('https://example.test/avatar.png');
         $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
         $driver->shouldReceive('user')->once()->andReturn($googleUser);
         Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
 
         $this->withSession(['student_activation_member_id' => $member->id])
-            ->get(route('auth.google.callback'))
+            ->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
             ->assertRedirect(route('student.dashboard'))
             ->assertSessionHas('success');
 

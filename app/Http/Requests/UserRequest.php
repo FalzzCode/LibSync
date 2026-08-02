@@ -9,7 +9,9 @@ class UserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        // User management is an admin-only operation. Keep this guard here
+        // as a second line of defense in case the route middleware changes.
+        return $this->user()?->role === 'admin';
     }
 
     public function rules(): array

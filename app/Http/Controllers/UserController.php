@@ -5,27 +5,41 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class UserController extends Controller
 {
     // Menampilkan daftar semua user
-    public function index(): View
+    public function index(Request $request): View
     {
-        $users = User::whereIn('role', ['admin', 'staff'])->latest()->get();
+        $this->ensureAdmin();
+        $search = $request->string('search')->trim()->toString();
+        $users = User::query()
+            ->whereIn('role', ['admin', 'staff'])
+            ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('role', 'like', "%{$search}%");
+            }))
+            ->latest()
+            ->get();
 
-        return view('users.index', compact('users'));
+        return view('users.index', compact('users', 'search'));
     }
 
     // Menampilkan form tambah user
     public function create(): View
     {
+        $this->ensureAdmin();
+
         return view('users.create');
     }
 
     // Menyimpan user baru
     public function store(UserRequest $request): RedirectResponse
     {
+        $this->ensureAdmin();
         User::create($request->validated());
 
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
@@ -34,6 +48,7 @@ class UserController extends Controller
     // Menampilkan form edit user
     public function edit(User $user): View
     {
+        $this->ensureAdmin();
         abort_if($user->role === 'student', 404);
 
         return view('users.edit', compact('user'));
@@ -42,6 +57,7 @@ class UserController extends Controller
     // Memperbarui data user
     public function update(UserRequest $request, User $user): RedirectResponse
     {
+        $this->ensureAdmin();
         abort_if($user->role === 'student', 404);
 
         $data = $request->validated();
@@ -63,6 +79,7 @@ class UserController extends Controller
     // Menghapus user
     public function destroy(User $user): RedirectResponse
     {
+        $this->ensureAdmin();
         if ($user->role === 'student') {
             return redirect()->route('members.index')->with('error', 'Akun siswa dikelola melalui data anggota.');
         }
@@ -79,5 +96,10 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+    }
+
+    private function ensureAdmin(): void
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
     }
 }

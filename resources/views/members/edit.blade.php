@@ -15,19 +15,10 @@
                 <p>Aktif sebagai <strong>{{ $member->user->email }}</strong>. Google sudah terhubung pada {{ optional($member->activated_at)->translatedFormat('d M Y') ?? 'akun lama' }}.</p>
             @elseif($member->user)
                 <p>Akun portal lama aktif sebagai <strong>{{ $member->user->email }}</strong>, tetapi belum terhubung ke Google. Gunakan akun ini untuk pengujian lokal atau hubungi admin untuk migrasi akun.</p>
-            @elseif(!$member->nis)
-                <p>Tambahkan NIS terlebih dahulu untuk membuat kode aktivasi.</p>
-            @elseif($member->activation_expires_at?->isFuture())
-                <p>Kode aktivasi aktif sampai {{ $member->activation_expires_at->translatedFormat('d M Y, H:i') }}. Buat ulang jika kode tidak lagi aman.</p>
             @else
-                <p>Portal belum aktif. Buat kode agar siswa dapat menghubungkan akun Google-nya.</p>
+                <p>{{ $member->email ? 'Email Google sudah tersimpan. Siswa dapat masuk memakai akun tersebut.' : 'Portal belum terhubung. Tambahkan Email Google di profil anggota agar siswa dapat masuk.' }}</p>
             @endif
         </div>
-        @if(!$member->user && $member->nis)
-            <div class="form-actions">
-                <form method="POST" action="{{ route('members.activation-code', $member) }}">@csrf<button class="btn btn--secondary" type="submit">Buat kode aktivasi</button></form>
-            </div>
-        @endif
     </section>
 </section>
 @endsection

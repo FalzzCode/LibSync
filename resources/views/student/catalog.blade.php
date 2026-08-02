@@ -11,15 +11,15 @@
     </header>
     <form class="student-catalog-search" method="GET" role="search">
         <label class="sr-only" for="studentBookSearch">Cari buku</label>
-        <span aria-hidden="true">⌕</span><input id="studentBookSearch" name="search" value="{{ request('search') }}" placeholder="Cari judul atau penulis…" autocomplete="off">
-        @if(request()->filled('search'))<a href="{{ route('student.catalog') }}" class="student-catalog-search__clear">Hapus</a>@endif
+        <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span><input id="studentBookSearch" type="search" name="search" value="{{ $search }}" placeholder="Cari judul atau penulis…" autocomplete="off" spellcheck="false">
+        <button class="student-catalog-search__clear search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         <button class="btn btn--primary" type="submit">Cari</button>
     </form>
     <div class="student-catalog-meta"><span>{{ $books->count() }} buku ditemukan</span><span>Stok diperbarui dari koleksi perpustakaan</span></div>
     <div class="book-catalog student-book-catalog">
         @forelse($books as $book)
         <article class="catalog-card student-book-card">
-            <div class="catalog-card__cover">@if($book->cover_image)<img src="{{ asset('storage/'.$book->cover_image) }}" alt="Cover {{ $book->title }}">@else<span>Lib<br>Sync</span>@endif</div>
+            <x-book-cover :book="$book" size="student-catalog" class="catalog-card__cover" />
             <div class="student-book-card__content"><p>{{ $book->category->name }}</p><h2>{{ $book->title }}</h2><small>{{ $book->author }}</small>
                 <div class="student-book-card__footer"><span class="badge {{ $book->stock > 0 ? 'badge--success' : 'badge--danger' }}">{{ $book->stock > 0 ? $book->stock.' tersedia' : 'Stok habis' }}</span>
                 @if($book->stock > 0)<form method="POST" action="{{ route('student.borrowings.store',$book) }}">@csrf<button class="btn btn--primary" type="submit">Ajukan pinjam <span aria-hidden="true">→</span></button></form>

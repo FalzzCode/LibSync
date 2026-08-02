@@ -53,6 +53,11 @@ class Member extends Model
         return $this->hasMany(Warning::class);
     }
 
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(BookReservation::class);
+    }
+
     protected function casts(): array
     {
         return [

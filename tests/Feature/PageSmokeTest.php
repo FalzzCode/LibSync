@@ -71,6 +71,10 @@ class PageSmokeTest extends TestCase
         $this->actingAs($admin)
             ->get(route('dashboard'))
             ->assertOk()
+            ->assertSee('transaction-stats--enhanced')
+            ->assertSee('data-solar-icon="solar:book-2-bold"', false)
+            ->assertSee('data-solar-icon="solar:wallet-money-bold"', false)
+            ->assertSee('Pinjaman aktif')
             ->assertSee('Belum ada aktivitas')
             ->assertSee('Grafik akan mulai terisi setelah peminjaman pertama dicatat.');
     }

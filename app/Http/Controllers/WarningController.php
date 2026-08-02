@@ -13,6 +13,18 @@ class WarningController extends Controller
     public function index(Request $request): View
     {
         $warnings = Warning::with(['member', 'borrowing.book'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = $request->string('search')->trim()->substr(0, 120)->toString();
+                if ($term === '') {
+                    return;
+                }
+                $query->where(function ($query) use ($term) {
+                    $query->where('title', 'like', "%{$term}%")
+                        ->orWhere('message', 'like', "%{$term}%")
+                        ->orWhereHas('member', fn ($member) => $member->where('name', 'like', "%{$term}%"))
+                        ->orWhereHas('borrowing.book', fn ($book) => $book->where('title', 'like', "%{$term}%"));
+                });
+            })
             ->when($request->filled('level'), fn ($query) => $query->where('level', $request->level))
             ->when($request->boolean('open'), fn ($query) => $query->whereNull('resolved_at'))
             ->latest()->get();

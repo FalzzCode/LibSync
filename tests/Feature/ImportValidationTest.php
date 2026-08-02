@@ -51,4 +51,56 @@ class ImportValidationTest extends TestCase
             'email' => 'lama@example.test',
         ]);
     }
+
+    public function test_impor_anggota_menerima_nama_kolom_bahasa_indonesia(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $csv = UploadedFile::fake()->createWithContent('anggota.csv', "nama,nomor_telepon,email,kelas\nSiswa Indonesia,08123456776,siswa@example.test,XI\n");
+
+        $this->actingAs($staff)->post(route('imports.store'), [
+            'type' => 'members',
+            'file' => $csv,
+        ])->assertRedirect(route('imports.create'))->assertSessionHas('success');
+
+        $this->assertDatabaseHas('members', [
+            'name' => 'Siswa Indonesia',
+            'phone' => '08123456776',
+            'email' => 'siswa@example.test',
+            'class' => 'XI',
+        ]);
+    }
+
+    public function test_impor_menolak_file_dengan_terlalu_banyak_baris_secara_atomik(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $csv = UploadedFile::fake()->createWithContent(
+            'too-many-rows.csv',
+            "title,author,category,stock\n".str_repeat("baris-tidak-lengkap\n", 10001),
+        );
+
+        $this->actingAs($staff)->from(route('imports.create'))->post(route('imports.store'), [
+            'type' => 'books',
+            'file' => $csv,
+        ])->assertRedirect(route('imports.create'))->assertSessionHas('error', 'File CSV terlalu besar. Maksimal 10.000 baris per impor.');
+
+        $this->assertDatabaseCount('books', 0);
+        $this->assertDatabaseCount('categories', 0);
+    }
+
+    public function test_impor_anggota_tidak_mewajibkan_nomor_telepon(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $csv = UploadedFile::fake()->createWithContent('anggota-tanpa-telepon.csv', "nama,email_google,kelas\nSiswa Tanpa Telepon,siswa2@example.test,XI\n");
+
+        $this->actingAs($staff)->post(route('imports.store'), [
+            'type' => 'members',
+            'file' => $csv,
+        ])->assertRedirect(route('imports.create'))->assertSessionHas('success');
+
+        $this->assertDatabaseHas('members', [
+            'name' => 'Siswa Tanpa Telepon',
+            'email' => 'siswa2@example.test',
+            'phone' => null,
+        ]);
+    }
 }

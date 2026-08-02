@@ -33,9 +33,9 @@ class AuthController extends Controller
     // Memproses percobaan login
     public function login(LoginRequest $request): RedirectResponse
     {
-        if (! app()->environment('local')) {
+        if (! config('auth.local_login_enabled')) {
             return redirect()->route('login')->withErrors([
-                'email' => 'Gunakan akun Google yang telah terdaftar untuk masuk.',
+                'email' => 'Gunakan tombol Google untuk masuk. Profil siswa baru dibuat otomatis.',
             ]);
         }
 
@@ -56,7 +56,7 @@ class AuthController extends Controller
     public function redirectToGoogle(Request $request): RedirectResponse
     {
         if (! $this->googleIsConfigured()) {
-            return back()->withErrors([
+            return redirect()->route('login')->withErrors([
                 'email' => 'Login Google belum dikonfigurasi. Pastikan Client ID, Client Secret, dan URL callback sudah diisi.',
             ]);
         }
@@ -96,8 +96,18 @@ class AuthController extends Controller
         try {
             $this->ensureGoogleStateIsValid($request);
             $googleUser = $this->googleProvider()->user();
-            $allowedGoogleDomain = config('services.google.allowed_domain');
-            if ($allowedGoogleDomain && ! str_ends_with(strtolower((string) $googleUser->getEmail()), '@'.strtolower($allowedGoogleDomain))) {
+            $googleEmail = strtolower(trim((string) $googleUser->getEmail()));
+            $googleId = trim((string) $googleUser->getId());
+
+            if ($googleEmail === '' || ! filter_var($googleEmail, FILTER_VALIDATE_EMAIL)) {
+                throw new \RuntimeException('google_email_missing');
+            }
+            if ($googleId === '') {
+                throw new \RuntimeException('google_id_missing');
+            }
+
+            $allowedGoogleDomain = trim((string) config('services.google.allowed_domain'));
+            if ($allowedGoogleDomain && ! $this->emailBelongsToDomain($googleEmail, $allowedGoogleDomain)) {
                 return redirect()->route('login')->withErrors([
                     'email' => 'Gunakan akun Google dengan domain sekolah yang terdaftar.',
                 ]);
@@ -109,24 +119,12 @@ class AuthController extends Controller
                 return $this->activateStudentWithGoogle($request, (int) $activationMemberId, $googleUser);
             }
 
-            $user = User::query()->where('google_id', $googleUser->getId())->orWhere('email', $googleUser->getEmail())->first();
-
-            if (! $user) {
-                return redirect()->route('login')->withErrors([
-                    'email' => 'Email Google ini belum terdaftar di perpustakaan. Minta petugas untuk membuat atau menghubungkan akun Anda.',
-                ]);
-            }
-
-            $user->forceFill([
-                'google_id' => $googleUser->getId(),
-                'avatar_url' => $googleUser->getAvatar(),
-                'email_verified_at' => $user->email_verified_at ?? now(),
-            ])->save();
+            $user = $this->resolveGoogleUser($googleUser, $googleId, $googleEmail);
 
             Auth::login($user, true);
             $request->session()->regenerate();
 
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended($user->role === 'student' ? route('student.dashboard') : route('dashboard'));
         } catch (\Throwable $exception) {
             $this->logGoogleFailure('callback', $exception, $request);
 
@@ -140,8 +138,8 @@ class AuthController extends Controller
 
     private function activateStudentWithGoogle(Request $request, int $memberId, mixed $googleUser): RedirectResponse
     {
-        $googleEmail = $googleUser->getEmail();
-        if (! $googleEmail) {
+        $googleEmail = strtolower(trim((string) $googleUser->getEmail()));
+        if ($googleEmail === '' || ! filter_var($googleEmail, FILTER_VALIDATE_EMAIL)) {
             return redirect()->route('student.activation.create')->withErrors(['activation_code' => 'Google tidak mengirim alamat email. Gunakan akun Google lain.']);
         }
 
@@ -190,6 +188,190 @@ class AuthController extends Controller
         return redirect()->route('student.dashboard')->with('success', 'Akun siswa berhasil diaktifkan. Selamat datang di LibSync.');
     }
 
+    /**
+     * Resolve an existing Google identity or provision a least-privilege
+     * student profile for a first-time Google sign-in.
+     *
+     * Email is the portable identity used by schools that do not issue NIS.
+     * Staff/admin/developer roles are never created by this path; only a
+     * pre-existing account can retain those privileges.
+     */
+    private function resolveGoogleUser(mixed $googleUser, string $googleId, string $googleEmail): User
+    {
+        return DB::transaction(function () use ($googleUser, $googleId, $googleEmail): User {
+            $userByGoogleId = User::query()
+                ->where('google_id', $googleId)
+                ->lockForUpdate()
+                ->first();
+            $userByEmail = User::query()
+                ->whereRaw('LOWER(email) = ?', [$googleEmail])
+                ->lockForUpdate()
+                ->first();
+
+            if ($userByGoogleId && $userByEmail && $userByGoogleId->id !== $userByEmail->id) {
+                throw new \RuntimeException('google_identity_conflict');
+            }
+
+            $user = $userByGoogleId ?: $userByEmail;
+            $avatarUrl = $this->googleAvatar($googleUser);
+
+            if ($user) {
+                if ($user->google_id && $user->google_id !== $googleId) {
+                    throw new \RuntimeException('google_identity_conflict');
+                }
+
+                $user->forceFill(array_filter([
+                    'google_id' => $googleId,
+                    'avatar_url' => $avatarUrl,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ], static fn (mixed $value): bool => $value !== null))->save();
+
+                if ($user->role === 'student') {
+                    $this->ensureStudentMember($user, $googleEmail, $googleUser);
+                }
+
+                return $user->fresh();
+            }
+
+            $member = Member::query()
+                ->whereRaw('LOWER(email) = ?', [$googleEmail])
+                ->lockForUpdate()
+                ->first();
+
+            if ($member?->user_id) {
+                $linkedUser = User::query()->lockForUpdate()->find($member->user_id);
+
+                if ($linkedUser && $linkedUser->google_id && $linkedUser->google_id !== $googleId) {
+                    throw new \RuntimeException('google_identity_conflict');
+                }
+
+                if ($linkedUser) {
+                    $linkedUser->forceFill(array_filter([
+                        'google_id' => $googleId,
+                        'avatar_url' => $avatarUrl,
+                        'email_verified_at' => $linkedUser->email_verified_at ?? now(),
+                    ], static fn (mixed $value): bool => $value !== null))->save();
+
+                    return $linkedUser->fresh();
+                }
+            }
+
+            if ($member) {
+                $user = $this->createGoogleStudent($googleId, $googleEmail, $member->name, $avatarUrl);
+                $member->update([
+                    'user_id' => $user->id,
+                    'email' => $googleEmail,
+                    'activated_at' => $member->activated_at ?? now(),
+                    'activation_code_hash' => null,
+                    'activation_expires_at' => null,
+                ]);
+                ActivityLogger::write('google_student_linked', 'member', $member, null, ['user_id' => $user->id]);
+
+                return $user;
+            }
+
+            if (! config('services.google.auto_register_students', true)) {
+                throw new \RuntimeException('google_registration_disabled');
+            }
+
+            $name = $this->googleProfileName($googleUser, $googleEmail);
+            $user = $this->createGoogleStudent($googleId, $googleEmail, $name, $avatarUrl);
+            $member = Member::create([
+                'user_id' => $user->id,
+                'name' => $name,
+                'email' => $googleEmail,
+                'phone' => null,
+                'activated_at' => now(),
+            ]);
+            ActivityLogger::write('google_student_registered', 'member', $member, null, ['user_id' => $user->id, 'email' => $googleEmail]);
+
+            return $user;
+        });
+    }
+
+    private function ensureStudentMember(User $user, string $googleEmail, mixed $googleUser): Member
+    {
+        $member = Member::query()->where('user_id', $user->id)->lockForUpdate()->first();
+
+        if (! $member) {
+            $member = Member::query()
+                ->whereRaw('LOWER(email) = ?', [$googleEmail])
+                ->lockForUpdate()
+                ->first();
+
+            if ($member?->user_id && $member->user_id !== $user->id) {
+                throw new \RuntimeException('google_email_conflict');
+            }
+        }
+
+        if (! $member) {
+            $member = Member::create([
+                'user_id' => $user->id,
+                'name' => $user->name ?: $this->googleProfileName($googleUser, $googleEmail),
+                'email' => $googleEmail,
+                'phone' => null,
+                'activated_at' => now(),
+            ]);
+        } else {
+            $member->update(array_filter([
+                'user_id' => $user->id,
+                'email' => $member->email ?: $googleEmail,
+                'activated_at' => $member->activated_at ?? now(),
+            ], static fn (mixed $value): bool => $value !== null));
+        }
+
+        return $member;
+    }
+
+    private function createGoogleStudent(string $googleId, string $googleEmail, string $name, ?string $avatarUrl): User
+    {
+        return User::create([
+            'name' => $name,
+            'email' => $googleEmail,
+            'password' => Str::random(64),
+            'role' => 'student',
+            'google_id' => $googleId,
+            'avatar_url' => $avatarUrl,
+            'email_verified_at' => now(),
+        ]);
+    }
+
+    private function googleProfileName(mixed $googleUser, string $email): string
+    {
+        try {
+            $name = trim((string) $googleUser->getName());
+        } catch (\Throwable) {
+            $name = '';
+        }
+
+        if ($name === '') {
+            $name = Str::of(Str::before($email, '@'))
+                ->replace(['.', '_', '-'], ' ')
+                ->title()
+                ->toString();
+        }
+
+        return Str::limit($name, 255, '');
+    }
+
+    private function googleAvatar(mixed $googleUser): ?string
+    {
+        try {
+            $avatar = $googleUser->getAvatar();
+        } catch (\Throwable) {
+            $avatar = null;
+        }
+
+        return is_string($avatar) && trim($avatar) !== '' ? trim($avatar) : null;
+    }
+
+    private function emailBelongsToDomain(string $email, string $domain): bool
+    {
+        $domain = strtolower(ltrim(trim($domain), '@'));
+
+        return str_ends_with($email, '@'.$domain);
+    }
+
     // Memproses logout
     public function logout(Request $request): RedirectResponse
     {
@@ -228,14 +410,28 @@ class AuthController extends Controller
 
     private function googleFailureMessage(\Throwable $exception): string
     {
-        if ($exception->getMessage() === 'invalid_oauth_state') {
+        $message = $exception->getMessage();
+
+        if ($message === 'invalid_oauth_state') {
             return 'Sesi login Google telah berakhir atau berubah. Tekan tombol Google sekali lagi dari halaman ini.';
+        }
+
+        if ($message === 'google_email_missing' || $message === 'google_id_missing') {
+            return 'Google tidak mengirim identitas lengkap. Pilih akun Google lain lalu coba lagi.';
+        }
+
+        if ($message === 'google_identity_conflict' || $message === 'google_email_conflict') {
+            return 'Akun Google ini sudah terhubung ke profil LibSync lain. Hubungi petugas jika perlu menggabungkan data.';
+        }
+
+        if ($message === 'google_registration_disabled') {
+            return 'Pendaftaran otomatis sedang dimatikan. Minta petugas menghubungkan akun Google Anda.';
         }
 
         $providerError = $this->googleProviderErrorCode($exception);
 
         if (in_array($providerError, ['invalid_client', 'unauthorized_client'], true)) {
-            return 'Kredensial Google di server tidak cocok. Administrator perlu memperbarui Client Secret di Railway.';
+            return 'Kredensial Google di server tidak cocok. Administrator perlu memperbarui Client Secret di pengaturan hosting.';
         }
 
         if ($providerError === 'invalid_grant') {

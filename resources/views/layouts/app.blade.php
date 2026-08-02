@@ -18,23 +18,34 @@
     <link rel="stylesheet" href="{{ asset('css/table-scrollbar-cleanup.css') }}?v=20260801-1">
     <link rel="stylesheet" href="{{ asset('css/members-mobile.css') }}?v=20260801-3">
     <link rel="stylesheet" href="{{ asset('css/borrowings-mobile.css') }}?v=20260801-1">
-    <link rel="stylesheet" href="{{ asset('css/profile.css') }}?v=20260801-1">
-    <link rel="stylesheet" href="{{ asset('css/solar-icons.css') }}?v=20260801-1">
+    <link rel="stylesheet" href="{{ asset('css/book-cover.css') }}?v=20260802-3">
+    <link rel="stylesheet" href="{{ asset('css/borrowing-detail.css') }}?v=20260802-3">
+    <link rel="stylesheet" href="{{ asset('css/profile.css') }}?v=20260802-1">
+    <link rel="stylesheet" href="{{ asset('css/solar-icons.css') }}?v=20260802-3">
     <link rel="stylesheet" href="{{ asset('css/branding.css') }}?v=20260801-2">
-    <link rel="stylesheet" href="{{ asset('css/student-portal.css') }}?v=20260801-5">
-    <link rel="stylesheet" href="{{ asset('css/dark-mode.css') }}?v=20260801-1">
+    <link rel="stylesheet" href="{{ asset('css/student-portal.css') }}?v=20260802-1">
+    <link rel="stylesheet" href="{{ asset('css/dark-mode.css') }}?v=20260802-2">
     <link rel="stylesheet" href="{{ asset('css/mobile-ux.css') }}?v=20260801-2">
     <link rel="stylesheet" href="{{ asset('css/motion-performance.css') }}?v=20260801-9">
     <link rel="stylesheet" href="{{ asset('css/action-center.css') }}?v=20260801-2">
+    <link rel="stylesheet" href="{{ asset('css/circulation-dashboard.css') }}?v=20260802-3">
+    <link rel="stylesheet" href="{{ asset('css/imports.css') }}?v=20260802-1">
 </head>
 <body>
+    @php
+        $brandSubtitle = match (Auth::user()->role) {
+            'student' => 'Portal siswa',
+            'developer' => 'Mode pengembang',
+            default => 'Manajemen perpustakaan',
+        };
+    @endphp
     <a href="#mainContent" class="skip-link">Langsung ke konten utama</a>
     <div class="layout">
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <aside class="layout__sidebar" id="appSidebar" aria-label="Navigasi utama">
             <div class="sidebar__brand">
                 <span class="brand-logo" aria-hidden="true"><img src="{{ asset('images/libsync-logo-512.png') }}" alt=""></span>
-                <span><strong class="brand-wordmark">LibSync</strong><small>Manajemen perpustakaan</small></span>
+                <span><strong class="brand-wordmark">LibSync</strong><small>{{ $brandSubtitle }}</small></span>
                 <button class="sidebar__close" id="sidebarClose" type="button" aria-label="Tutup menu">×</button>
             </div>
             <nav class="sidebar__menu">
@@ -110,7 +121,7 @@
         @endif
         <a href="{{ route('profile.edit') }}" @class(['is-active' => request()->routeIs('profile.*')])><span aria-hidden="true">◉</span>Profil</a>
     </nav>
-    <div class="modal-overlay" id="modalOverlay" hidden><section class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle">Konfirmasi tindakan</h2><p id="modalMessage"></p><div class="modal__actions"><button class="btn btn--secondary" id="modalCancel" type="button">Batal</button><button class="btn btn--danger" id="modalConfirm" type="button">Hapus</button></div></section></div>
+    <div class="modal-overlay" id="modalOverlay" hidden aria-hidden="true"><section class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalMessage"><h2 id="modalTitle">Konfirmasi tindakan</h2><p id="modalMessage"></p><div class="modal__actions"><button class="btn btn--secondary" id="modalCancel" type="button">Batal</button><button class="btn btn--danger" id="modalConfirm" type="button">Hapus</button></div></section></div>
     @php
         $loaderType = match (true) {
             request()->routeIs('dashboard', 'student.dashboard') => 'dashboard',
@@ -180,8 +191,8 @@
         </div>
     </div>
     <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js" defer></script>
-    <script src="{{ asset('js/script.js') }}" defer></script>
+    <script src="{{ asset('js/script.js') }}?v=20260802-2" defer></script>
     @vite('resources/js/app.js')
-    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset('service-worker.js') }}'); }</script>
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('{{ asset('service-worker.js') }}?v=20260802-4'); }</script>
 </body>
 </html>

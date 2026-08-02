@@ -22,6 +22,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Local password login
+    |--------------------------------------------------------------------------
+    |
+    | Google is the normal sign-in method for production. A switch keeps the
+    | local/staging password form explicit, so a stale APP_ENV or cached config
+    | cannot make the test login appear randomly or disappear.
+    |
+    */
+
+    'local_login_enabled' => env(
+        'LOCAL_LOGIN_ENABLED',
+        env('APP_ENV', 'production') === 'local'
+    ),
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Guards
     |--------------------------------------------------------------------------
     |

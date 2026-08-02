@@ -14,12 +14,25 @@
 .profile-photo-field label > span { font-size: 20px; margin-right: 9px; }.profile-photo-field strong { font-size: 13px; }.profile-photo-field small { display: block; margin: 3px 0 0 30px; color: var(--muted); font-weight: 400; }
 .profile-photo-field.is-selected { border-style: solid; border-color: #5f9d89; background: #eef7f2; }
 .profile-photo-field.is-selected small { color: #2b6c57; }
+.profile-photo-field.is-pending { border-style: solid; border-color: #c9974f; background: #fff8eb; }
+.profile-photo-field.is-pending small { color: #8d682f; }
+.profile-photo-confirm-overlay { z-index: 110; }
+.profile-photo-confirm { width: min(420px, 100%); text-align: center; }
+.profile-photo-confirm__preview { width: 104px; height: 104px; margin: 0 auto 18px; overflow: hidden; border: 4px solid var(--mint); border-radius: 50%; background: var(--mint); box-shadow: 0 8px 20px rgb(16 56 49 / 12%); }
+.profile-photo-confirm__preview img { width: 100%; height: 100%; object-fit: cover; }
+.profile-photo-confirm h2 { margin: 0; }
+.profile-photo-confirm p { margin-bottom: 20px; }
+.profile-photo-confirm .modal__actions { justify-content: stretch; }
+.profile-photo-confirm .modal__actions .btn { flex: 1; }
 @media (max-width: 760px) { .profile-layout { grid-template-columns: 1fr; gap: 14px; }.profile-summary { position: static; display: grid; grid-template-columns: 62px minmax(0,1fr); gap: 3px 14px; text-align: left; padding: 17px; }.profile-avatar--large { width: 62px; height: 62px; margin: 0; grid-row: span 3; font-size: 20px; }.profile-summary h2 { align-self: end; font-size: 19px; }.profile-summary p { align-self: start; margin: 0; }.profile-summary .role-badge { justify-self: start; }.profile-summary__note { display: none; }.profile-photo-field small { margin-left: 0; }.profile-card .form-grid { grid-template-columns: 1fr; } }
 :root[data-theme="dark"] .profile-summary { background: var(--surface); border-color: var(--line); }
 :root[data-theme="dark"] .profile-avatar { background: #29483f; color: #e6f5ee; }
 :root[data-theme="dark"] .profile-photo-field { background: #152821; border-color: #52756a; }
 :root[data-theme="dark"] .profile-photo-field label { color: #c3e2d5; }
 :root[data-theme="dark"] .profile-photo-field.is-selected { background: #1b3b32; border-color: #6da791; }
+:root[data-theme="dark"] .profile-photo-field.is-pending { background: #3c3223; border-color: #c7a05e; }
+:root[data-theme="dark"] .profile-photo-field.is-pending small { color: #e5c789; }
+:root[data-theme="dark"] .profile-photo-confirm__preview { border-color: #29483f; background: #29483f; box-shadow: 0 8px 20px rgb(0 0 0 / 28%); }
 .dropdown-menu__profile { display: flex; justify-content: space-between; padding: 0 0 11px; color: var(--forest); font-size: 13px; font-weight: 700; text-decoration: none; }
 :root[data-theme="dark"] .dropdown-menu__profile { color: #c1dfd2; }
 .chart-empty-state { min-height: 150px; display: grid; place-items: center; text-align: center; color: var(--muted); padding: 18px; }

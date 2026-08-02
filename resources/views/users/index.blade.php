@@ -14,8 +14,21 @@
         <a class="btn btn--primary" href="{{ route('users.create') }}">+ Tambah pengguna</a>
     </div>
 
+    <form class="filter-bar" method="GET" action="{{ route('users.index') }}">
+        <div class="search-field">
+            <label class="sr-only" for="userSearch">Cari pengguna</label>
+            <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span>
+            <input id="userSearch" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email, atau peran…" spellcheck="false">
+            <button class="search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
+        </div>
+        <div class="filter-bar__controls">
+            <button class="btn btn--secondary" type="submit">Cari</button>
+            @if($search)<a class="filter-reset" href="{{ route('users.index') }}">Reset</a>@endif
+        </div>
+    </form>
+
     <div class="table-card">
-        <div class="table-card__meta"><span>{{ $users->count() }} pengguna terdaftar</span></div>
+        <div class="table-card__meta"><span>{{ $users->count() }} pengguna {{ $search ? 'ditemukan' : 'terdaftar' }}</span></div>
         <div class="table-wrapper">
             <table class="data-table">
                 <thead>
@@ -51,7 +64,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4"><div class="empty-state"><span>◉</span><h2>Belum ada pengguna</h2><p>Tambahkan pengguna untuk memberi akses ke sistem.</p><a class="btn btn--primary" href="{{ route('users.create') }}">+ Tambah pengguna</a></div></td></tr>
+                        <tr><td colspan="4"><div class="empty-state"><span>◉</span><h2>{{ $search ? 'Pengguna tidak ditemukan' : 'Belum ada pengguna' }}</h2><p>{{ $search ? 'Coba gunakan kata kunci lain atau reset pencarian.' : 'Tambahkan pengguna untuk memberi akses ke sistem.' }}</p>@if(!$search)<a class="btn btn--primary" href="{{ route('users.create') }}">+ Tambah pengguna</a>@endif</div></td></tr>
                     @endforelse
                 </tbody>
             </table>

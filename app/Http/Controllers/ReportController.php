@@ -6,6 +6,7 @@ use App\Models\Borrowing;
 use App\Models\FinePayment;
 use App\Models\Member;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -13,17 +14,13 @@ class ReportController extends Controller
 {
     public function index(Request $request): View
     {
-        $from = $request->date('from')?->startOfDay() ?? now()->startOfMonth();
-        $until = $request->date('until')?->endOfDay() ?? now()->endOfDay();
-        if ($from->greaterThan($until)) {
-            [$from, $until] = [$until->copy()->startOfDay(), $from->copy()->endOfDay()];
-        }
+        [$from, $until] = $this->dateRange($request);
 
         $borrowings = Borrowing::query()->whereBetween('borrowed_at', [$from, $until]);
         $summary = [
             'borrowed' => (clone $borrowings)->count(),
             'returned' => (clone $borrowings)->where('status', 'returned')->count(),
-            'overdue' => Borrowing::overdue()->count(),
+            'overdue' => (clone $borrowings)->overdue()->count(),
             'fines_paid' => FinePayment::query()->whereBetween('paid_at', [$from, $until])->sum('amount'),
             'members' => Member::query()->whereBetween('created_at', [$from, $until])->count(),
         ];
@@ -33,15 +30,16 @@ class ReportController extends Controller
 
     public function borrowingsCsv(Request $request): StreamedResponse
     {
+        [$from, $until] = $this->dateRange($request, includeDefaults: false);
         $filename = 'laporan-peminjaman-'.now()->format('Ymd-His').'.csv';
 
-        return response()->streamDownload(function () use ($request) {
+        return response()->streamDownload(function () use ($from, $until) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
             $this->writeCsvRow($output, ['ID', 'Anggota', 'Buku', 'Status', 'Tanggal pinjam', 'Jatuh tempo', 'Tanggal kembali', 'Denda']);
             Borrowing::with(['member:id,name', 'book:id,title'])
-                ->when($request->filled('from'), fn ($query) => $query->whereDate('borrowed_at', '>=', $request->from))
-                ->when($request->filled('until'), fn ($query) => $query->whereDate('borrowed_at', '<=', $request->until))
+                ->when($from, fn ($query) => $query->where('borrowed_at', '>=', $from))
+                ->when($until, fn ($query) => $query->where('borrowed_at', '<=', $until))
                 ->latest('id')
                 ->chunk(200, function ($borrowings) use ($output) {
                     foreach ($borrowings as $borrowing) {
@@ -50,6 +48,37 @@ class ReportController extends Controller
                 });
             fclose($output);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Normalize report dates in one place so the screen and CSV export always
+     * describe the same period. Reversed dates are corrected instead of
+     * returning an empty report that looks like a data loss.
+     *
+     * @return array{0: Carbon|null, 1: Carbon|null}
+     */
+    private function dateRange(Request $request, bool $includeDefaults = true): array
+    {
+        $request->validate([
+            'from' => ['nullable', 'date'],
+            'until' => ['nullable', 'date'],
+        ]);
+
+        $from = $request->date('from');
+        $until = $request->date('until');
+
+        if (! $from && ! $until && ! $includeDefaults) {
+            return [null, null];
+        }
+
+        $from = ($from ?? now()->startOfMonth())->startOfDay();
+        $until = ($until ?? now())->endOfDay();
+
+        if ($from->greaterThan($until)) {
+            [$from, $until] = [$until->copy()->startOfDay(), $from->copy()->endOfDay()];
+        }
+
+        return [$from, $until];
     }
 
     public function finePaymentsCsv(): StreamedResponse

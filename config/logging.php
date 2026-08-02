@@ -60,7 +60,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            // Containers such as Railway expose stderr in deployment logs;
+            // Container hosts expose stderr in deployment logs;
             // keep file logs locally while making production failures visible.
             'channels' => $stackChannels,
             'ignore_exceptions' => false,

@@ -16,9 +16,10 @@
 
     <form class="filter-bar filter-bar--transaction" method="GET">
         <div class="search-field">
-            <span aria-hidden="true">⌕</span>
+            <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span>
             <label class="sr-only" for="transactionSearch">Cari transaksi</label>
-            <input id="transactionSearch" type="search" name="search" value="{{ request('search') }}" placeholder="Cari anggota atau judul buku…">
+            <input id="transactionSearch" type="search" name="search" value="{{ request('search') }}" placeholder="Cari anggota atau judul buku…" spellcheck="false">
+            <button class="search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         </div>
         <div class="filter-bar__controls">
             <select name="status" aria-label="Status transaksi">
@@ -63,7 +64,7 @@
                             <td><a class="icon-button" href="{{ route('borrowings.show', $borrowing) }}" aria-label="Lihat transaksi {{ $borrowing->id }}">→</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="6"><div class="empty-state"><span>↺</span><h2>Belum ada transaksi</h2><p>Catat peminjaman pertama untuk mulai melihat riwayat sirkulasi.</p><a class="btn btn--primary" href="{{ route('borrowings.create') }}">+ Catat peminjaman</a></div></td></tr>
+                        <tr><td colspan="6"><div class="empty-state"><span>↺</span><h2>{{ request()->hasAny(['search', 'status', 'from', 'until']) ? 'Transaksi tidak ditemukan' : 'Belum ada transaksi' }}</h2><p>{{ request()->hasAny(['search', 'status', 'from', 'until']) ? 'Coba ubah kata kunci, status, atau rentang tanggal.' : 'Catat peminjaman pertama untuk mulai melihat riwayat sirkulasi.' }}</p>@if(!request()->hasAny(['search', 'status', 'from', 'until']))<a class="btn btn--primary" href="{{ route('borrowings.create') }}">+ Catat peminjaman</a>@endif</div></td></tr>
                     @endforelse
                 </tbody>
             </table>

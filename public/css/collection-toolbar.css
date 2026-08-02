@@ -48,7 +48,7 @@
         padding: 2px 0;
     }
 
-    #catalogView .catalog-card__cover { height: 164px; }
+    #catalogView .catalog-card__cover { height: auto; aspect-ratio: 3 / 4; }
     #catalogView .catalog-card > div:last-child { padding: 12px; }
     #catalogView .catalog-card h2 { font-size: 16px; }
     #catalogView .catalog-card small { font-size: 11px; }

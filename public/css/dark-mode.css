@@ -58,6 +58,11 @@
 :root[data-theme="dark"] .payment-form input,
 :root[data-theme="dark"] .payment-form select,
 :root[data-theme="dark"] .return-form input { background: #152821; color: var(--ink); border-color: #46685e; }
+:root[data-theme="dark"] .search-field > span,
+:root[data-theme="dark"] .student-catalog-search > span { color: #a8c9bc; }
+:root[data-theme="dark"] .search-field__clear { color: #b6d7ca; }
+:root[data-theme="dark"] .search-field__clear:hover { background: #29483f; color: #effaf5; }
+:root[data-theme="dark"] .search-field__clear:focus-visible { outline-color: #9dd5c0; }
 :root[data-theme="dark"] input::placeholder,
 :root[data-theme="dark"] textarea::placeholder { color: #91a8a0; }
 :root[data-theme="dark"] .form-group input:focus,

@@ -27,7 +27,10 @@ class BorrowingController extends Controller
     {
         $borrowings = Borrowing::with(['member', 'book', 'user'])
             ->when($request->filled('search'), function (Builder $query) use ($request) {
-                $term = $request->string('search')->trim();
+                $term = $request->string('search')->trim()->substr(0, 120)->toString();
+                if ($term === '') {
+                    return;
+                }
                 $query->where(function (Builder $query) use ($term) {
                     $query->whereHas('member', fn (Builder $member) => $member->where('name', 'like', "%{$term}%"))
                         ->orWhereHas('book', fn (Builder $book) => $book->where('title', 'like', "%{$term}%"));
@@ -108,9 +111,27 @@ class BorrowingController extends Controller
             return back()->with('error', 'Permintaan ini sudah diproses.');
         }
         $data = ['member_id' => $borrowing->member_id, 'book_id' => $borrowing->book_id];
-        DB::transaction(function () use ($borrowing, $data) {
+        $standingFailure = null;
+        $approvalError = null;
+
+        DB::transaction(function () use ($borrowing, $data, &$standingFailure, &$approvalError) {
+            $borrowing = Borrowing::lockForUpdate()->findOrFail($borrowing->id);
+            if ($borrowing->status !== 'requested') {
+                $approvalError = 'Permintaan ini sudah diproses.';
+
+                return;
+            }
             $member = Member::lockForUpdate()->findOrFail($data['member_id']);
-            MemberStanding::assertCanBorrow($member);
+            try {
+                MemberStanding::assertCanBorrow($member);
+            } catch (ValidationException $exception) {
+                // The standing service records an automatic block and warning.
+                // Catch here so those records can commit before the validation
+                // error is shown to the staff member.
+                $standingFailure = $exception;
+
+                return;
+            }
             $book = Book::lockForUpdate()->findOrFail($data['book_id']);
             if ($book->archived_at) {
                 throw ValidationException::withMessages(['borrowing' => 'Buku ini sudah diarsipkan dan tidak dapat dipinjam.']);
@@ -127,11 +148,33 @@ class BorrowingController extends Controller
             if ($readyReservations->isNotEmpty() && ! $readyReservation) {
                 throw ValidationException::withMessages(['borrowing' => 'Buku ini sedang disiapkan untuk anggota dalam daftar tunggu.']);
             }
+            if (Borrowing::query()
+                ->where('member_id', $member->id)
+                ->where('book_id', $book->id)
+                ->whereIn('status', ['requested', 'borrowed', 'return_requested'])
+                ->whereKeyNot($borrowing->id)
+                ->exists()) {
+                $borrowing->update([
+                    'status' => 'rejected',
+                    'rejected_at' => now(),
+                    'rejected_reason' => 'Anggota masih memiliki permintaan atau pinjaman buku yang sama.',
+                ]);
+                $approvalError = 'Permintaan ditolak karena anggota masih memiliki permintaan atau pinjaman buku yang sama.';
+
+                return;
+            }
             $book->decrement('stock');
             $borrowing->update(['status' => 'borrowed', 'user_id' => auth()->id(), 'borrowed_at' => today(), 'due_date' => today()->addDays((int) SystemSetting::value('default_loan_days', 7)), 'approved_at' => now()]);
             $readyReservation?->update(['status' => 'fulfilled', 'fulfilled_at' => now()]);
             ActivityLogger::write('approve_borrowing', 'borrowing', $borrowing, null, $borrowing->fresh()->toArray());
         });
+
+        if ($standingFailure) {
+            throw $standingFailure;
+        }
+        if ($approvalError) {
+            return back()->with('error', $approvalError);
+        }
 
         return back()->with('success', 'Peminjaman disetujui dan stok diperbarui.');
     }
@@ -184,9 +227,23 @@ class BorrowingController extends Controller
         if ($borrowing->status !== 'borrowed' || ! $borrowing->extension_requested_at || $borrowing->extension_count >= 1) {
             return back()->with('error', 'Permintaan perpanjangan tidak valid.');
         }
-        $before = $borrowing->only(['due_date', 'extension_count', 'extension_requested_at']);
-        $borrowing->update(['due_date' => $borrowing->due_date->addDays((int) SystemSetting::value('default_loan_days', 7)), 'extension_count' => $borrowing->extension_count + 1, 'extension_requested_at' => null]);
-        ActivityLogger::write('approve_extension', 'borrowing', $borrowing, $before, $borrowing->fresh()->only(['due_date', 'extension_count']));
+        $approvalError = null;
+
+        DB::transaction(function () use ($borrowing, &$approvalError) {
+            $borrowing = Borrowing::lockForUpdate()->findOrFail($borrowing->id);
+            if ($borrowing->status !== 'borrowed' || ! $borrowing->extension_requested_at || $borrowing->extension_count >= 1) {
+                $approvalError = 'Permintaan perpanjangan tidak valid atau sudah diproses.';
+
+                return;
+            }
+            $before = $borrowing->only(['due_date', 'extension_count', 'extension_requested_at']);
+            $borrowing->update(['due_date' => $borrowing->due_date->addDays((int) SystemSetting::value('default_loan_days', 7)), 'extension_count' => $borrowing->extension_count + 1, 'extension_requested_at' => null]);
+            ActivityLogger::write('approve_extension', 'borrowing', $borrowing, $before, $borrowing->fresh()->only(['due_date', 'extension_count']));
+        });
+
+        if ($approvalError) {
+            return back()->with('error', $approvalError);
+        }
 
         return back()->with('success', 'Perpanjangan disetujui.');
     }

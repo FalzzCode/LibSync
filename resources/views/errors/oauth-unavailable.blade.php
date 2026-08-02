@@ -16,7 +16,7 @@
     <main>
         <p>LIBSYNC · MASUK</p>
         <h1>Login Google belum dapat diteruskan.</h1>
-        <p>Sesi login telah dihentikan dengan aman. Kembali ke halaman masuk lalu coba sekali lagi. Jika masalah berulang, administrator dapat memeriksa Railway Logs dengan waktu kejadian ini.</p>
+        <p>Sesi login telah dihentikan dengan aman. Kembali ke halaman masuk lalu coba sekali lagi. Jika masalah berulang, administrator dapat memeriksa log hosting dengan waktu kejadian ini.</p>
         <a href="{{ route('login') }}">Kembali ke masuk</a>
     </main>
 </body>

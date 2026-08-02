@@ -10,10 +10,11 @@ class StudentCatalogController extends Controller
 {
     public function index(Request $request): View
     {
+        $search = $request->string('search')->trim()->substr(0, 120)->toString();
         $books = Book::query()->with('category')->whereNull('archived_at')
-            ->when($request->filled('search'), fn ($query) => $query->where(fn ($query) => $query->where('title', 'like', '%'.$request->search.'%')->orWhere('author', 'like', '%'.$request->search.'%')))
+            ->when($search !== '', fn ($query) => $query->where(fn ($query) => $query->where('title', 'like', '%'.$search.'%')->orWhere('author', 'like', '%'.$search.'%')))
             ->orderBy('title')->get();
 
-        return view('student.catalog', compact('books'));
+        return view('student.catalog', compact('books', 'search'));
     }
 }

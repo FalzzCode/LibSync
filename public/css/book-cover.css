@@ -1,0 +1,264 @@
+/* Shared book-cover primitive. Every surface uses the same portrait ratio, fallback and image behavior. */
+.book-cover {
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    isolation: isolate;
+    flex: 0 0 auto;
+    background:
+        radial-gradient(circle at 18% 16%, rgba(255,255,255,.28), transparent 32%),
+        linear-gradient(145deg, #e4f1eb 0%, #c9e0d5 100%);
+    border: 1px solid rgba(111, 155, 140, .34);
+    color: #2d6b5b;
+}
+
+.book-cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.18), transparent 38%, rgba(12,55,43,.1));
+    pointer-events: none;
+}
+
+.book-cover img {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.book-cover--catalog img,
+.book-cover--student-catalog img,
+.book-cover--loan img,
+.book-cover--detail img {
+    object-position: center top;
+}
+
+.book-cover__fallback {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    gap: 5px;
+    max-width: 90%;
+    text-align: center;
+}
+
+.book-cover__fallback[hidden] { display: none !important; }
+
+.book-cover__fallback-mark {
+    display: grid;
+    width: 39px;
+    height: 39px;
+    place-items: center;
+    border: 1px solid rgba(45, 107, 91, .28);
+    border-radius: 12px;
+    color: #2d6b5b;
+    font: 800 12px/1 var(--font);
+    letter-spacing: .08em;
+}
+
+.book-cover__fallback small {
+    color: rgba(45, 107, 91, .8);
+    font-size: 9px;
+    line-height: 1.2;
+}
+
+.book-cover--table {
+    width: 36px;
+    height: 48px;
+    border-radius: 5px;
+}
+
+.book-cover--table .book-cover__fallback-mark {
+    width: 27px;
+    height: 27px;
+    border-radius: 8px;
+    font-size: 9px;
+}
+
+.book-cover--table .book-cover__fallback small { display: none; }
+
+.book-cover--catalog {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    border: 0;
+    border-radius: 0;
+}
+
+.book-cover--student-catalog {
+    width: 100%;
+    min-height: 164px;
+    height: 100%;
+    border-radius: 8px;
+}
+
+.book-cover--loan {
+    width: 48px;
+    height: 58px;
+    border-radius: 8px;
+    box-shadow: 0 5px 12px rgba(24,57,48,.12);
+}
+
+.book-cover--loan .book-cover__fallback-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 9px;
+}
+
+.book-cover--loan .book-cover__fallback small { display: none; }
+
+.book-cover--form {
+    width: 58px;
+    height: 78px;
+    border-radius: 5px;
+}
+
+.book-cover--form .book-cover__fallback-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 9px;
+}
+
+.book-cover--form .book-cover__fallback small { display: none; }
+
+.book-cover__preview-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.book-cover--detail {
+    width: 100%;
+    min-height: 350px;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+}
+
+.book-cover--detail .book-cover__fallback-mark {
+    width: 62px;
+    height: 62px;
+    border-radius: 19px;
+    color: #dcb877;
+    border-color: rgba(255,255,255,.35);
+}
+
+.book-cover--detail .book-cover__fallback {
+    color: #e4f1eb;
+}
+
+.book-cover--detail .book-cover__fallback small {
+    color: rgba(255,255,255,.7);
+}
+
+/* Keep detail pages usable when a phone is zoomed or a tablet is narrow. */
+.page,
+.page-header,
+.detail-card,
+.detail-card__content,
+.detail-card__cover {
+    min-width: 0;
+}
+
+.page-header > div:first-child {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.page-header h1,
+.page-header p:not(.eyebrow),
+.detail-list dd {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.detail-card__content {
+    overflow: hidden;
+}
+
+/* Every grid track must be allowed to shrink inside the content column. */
+.detail-card,
+.detail-card__content,
+.detail-list,
+.detail-list > div {
+    min-width: 0;
+}
+
+.detail-card {
+    grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+}
+
+.detail-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+    .detail-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .detail-card__cover.book-cover--detail {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 3 / 4;
+    }
+
+    .detail-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* The main area is narrower than the browser viewport when a sidebar is open.
+   Stack the detail panel before its two-column layout can become cramped. */
+@media (min-width: 1101px) and (max-width: 1280px) {
+    .detail-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .detail-card__cover.book-cover--detail {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 3 / 4;
+    }
+
+    .detail-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+:root[data-theme="dark"] .book-cover {
+    background:
+        radial-gradient(circle at 18% 16%, rgba(153,212,184,.16), transparent 32%),
+        linear-gradient(145deg, #29483e 0%, #1e352f 100%);
+    border-color: rgba(119, 166, 149, .35);
+    color: #b8dcca;
+}
+
+:root[data-theme="dark"] .book-cover__fallback-mark { border-color: rgba(184,220,202,.35); color: #b8dcca; }
+:root[data-theme="dark"] .book-cover__fallback small { color: rgba(184,220,202,.75); }
+
+@media (max-width: 760px) {
+    .book-cover--table { width: 30px; height: 40px; }
+    .book-cover--catalog { height: auto; aspect-ratio: 3 / 4; }
+    .book-cover--student-catalog { min-height: 126px; }
+    .book-cover--loan { width: 42px; height: 54px; }
+    .detail-card__cover.book-cover--detail {
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 3 / 4;
+    }
+}

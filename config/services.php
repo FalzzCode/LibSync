@@ -1,5 +1,11 @@
 <?php
 
+$googleRedirect = env('GOOGLE_REDIRECT_URI');
+
+if (! is_string($googleRedirect) || trim($googleRedirect) === '' || str_contains($googleRedirect, '${APP_URL}')) {
+    $googleRedirect = rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/google/callback';
+}
+
 return [
 
     /*
@@ -38,8 +44,14 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        // APP_URL is the only domain-specific value required for OAuth. An
+        // explicit URI remains supported for providers that use a separate
+        // auth hostname.
+        'redirect' => $googleRedirect,
         'allowed_domain' => env('GOOGLE_ALLOWED_DOMAIN'),
+        // New Google identities become least-privilege student accounts. Set
+        // this to false only when a librarian wants invite-only onboarding.
+        'auto_register_students' => (bool) env('GOOGLE_AUTO_REGISTER_STUDENTS', true),
     ],
 
 ];

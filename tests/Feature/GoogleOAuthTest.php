@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Member;
 use App\Models\User;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Psr7\Request;
@@ -24,6 +25,7 @@ class GoogleOAuthTest extends TestCase
         config()->set('services.google.client_id', 'test-client-id');
         config()->set('services.google.client_secret', 'test-client-secret');
         config()->set('services.google.redirect', 'https://libsync.test/auth/google/callback');
+        config()->set('services.google.auto_register_students', true);
     }
 
     public function test_google_redirect_requires_the_complete_configuration(): void
@@ -33,6 +35,14 @@ class GoogleOAuthTest extends TestCase
         $this->get(route('auth.google.redirect'))
             ->assertRedirect()
             ->assertSessionHasErrors('email');
+    }
+
+    public function test_login_page_explains_that_google_sign_in_uses_email(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('alamat email Google')
+            ->assertSee('Lanjutkan dengan Google');
     }
 
     public function test_google_redirect_uses_a_short_lived_first_party_state_cookie(): void
@@ -79,6 +89,91 @@ class GoogleOAuthTest extends TestCase
         $this->get(route('dashboard'))->assertOk();
     }
 
+    public function test_first_time_google_sign_in_creates_a_student_profile_without_nis(): void
+    {
+        $googleUser = Mockery::mock();
+        $googleUser->shouldReceive('getId')->once()->andReturn('google-new-student-1');
+        $googleUser->shouldReceive('getEmail')->once()->andReturn('Siswa.Baru@example.test');
+        $googleUser->shouldReceive('getName')->once()->andReturn('Siswa Baru');
+        $googleUser->shouldReceive('getAvatar')->once()->andReturn('https://example.test/student.png');
+        $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
+        $driver->shouldReceive('user')->once()->andReturn($googleUser);
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
+
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
+            ->assertRedirect(route('student.dashboard'));
+
+        $user = User::where('email', 'siswa.baru@example.test')->firstOrFail();
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame('student', $user->role);
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'google_id' => 'google-new-student-1',
+        ]);
+        $this->assertDatabaseHas('members', [
+            'user_id' => $user->id,
+            'name' => 'Siswa Baru',
+            'email' => 'siswa.baru@example.test',
+            'nis' => null,
+            'phone' => null,
+        ]);
+        $this->get(route('student.dashboard'))->assertOk()->assertSee('Siswa Baru');
+    }
+
+    public function test_google_sign_in_links_an_existing_member_by_email_without_nis(): void
+    {
+        $member = Member::create([
+            'name' => 'Anggota Lama',
+            'email' => 'anggota@example.test',
+            'phone' => null,
+        ]);
+        $googleUser = Mockery::mock();
+        $googleUser->shouldReceive('getId')->once()->andReturn('google-member-1');
+        $googleUser->shouldReceive('getEmail')->once()->andReturn('ANGGOTA@example.test');
+        $googleUser->shouldReceive('getAvatar')->once()->andReturn(null);
+        $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
+        $driver->shouldReceive('user')->once()->andReturn($googleUser);
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
+
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
+            ->assertRedirect(route('student.dashboard'));
+
+        $this->assertDatabaseHas('members', [
+            'id' => $member->id,
+            'user_id' => User::where('email', 'anggota@example.test')->value('id'),
+        ]);
+        $this->assertNotNull($member->fresh()->activated_at);
+        $this->assertDatabaseHas('users', [
+            'email' => 'anggota@example.test',
+            'role' => 'student',
+            'google_id' => 'google-member-1',
+        ]);
+    }
+
+    public function test_unknown_google_account_can_be_rejected_when_auto_registration_is_disabled(): void
+    {
+        config()->set('services.google.auto_register_students', false);
+        $googleUser = Mockery::mock();
+        $googleUser->shouldReceive('getId')->once()->andReturn('google-disabled-1');
+        $googleUser->shouldReceive('getEmail')->once()->andReturn('belum-terdaftar@example.test');
+        $googleUser->shouldReceive('getAvatar')->once()->andReturn(null);
+        $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
+        $driver->shouldReceive('user')->once()->andReturn($googleUser);
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
+
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('email', 'Pendaftaran otomatis sedang dimatikan. Minta petugas menghubungkan akun Google Anda.');
+
+        $this->assertDatabaseMissing('users', ['email' => 'belum-terdaftar@example.test']);
+    }
+
     public function test_google_callback_returns_to_login_when_the_provider_fails(): void
     {
         $driver = Mockery::mock();
@@ -106,7 +201,7 @@ class GoogleOAuthTest extends TestCase
         $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
             ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
             ->assertRedirect(route('login'))
-            ->assertSessionHasErrors('email', 'Kredensial Google di server tidak cocok. Administrator perlu memperbarui Client Secret di Railway.');
+            ->assertSessionHasErrors('email', 'Kredensial Google di server tidak cocok. Administrator perlu memperbarui Client Secret di pengaturan hosting.');
     }
 
     public function test_google_callback_rejects_a_missing_or_mismatched_state_without_contacting_google(): void

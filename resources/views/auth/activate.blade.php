@@ -7,8 +7,9 @@
     <title>Aktivasi akun siswa · LibSync</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/responsive.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/google-auth.css') }}?v=20260808-1">
-    <link rel="stylesheet" href="{{ asset('css/branding.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/dark-mode.css') }}?v=20260802-2">
+    <link rel="stylesheet" href="{{ asset('css/branding.css') }}?v=20260808-2">
+    <link rel="stylesheet" href="{{ asset('css/google-auth.css') }}?v=20260808-2">
 </head>
 <body class="auth-body">
     <main class="login">
@@ -16,10 +17,10 @@
         <section class="login__form-wrapper">
             <form class="login__form" method="POST" action="{{ route('student.activation.store') }}">
                 @csrf
-                <div class="login__form-intro"><p class="eyebrow">Aktivasi siswa</p><h2>Hubungkan akun Google</h2><p>Masukkan NIS dan kode aktivasi yang diberikan petugas perpustakaan.</p></div>
-                <div class="form-group"><label for="nis">NIS</label><input id="nis" name="nis" value="{{ old('nis') }}" required autofocus @class(['is-invalid' => $errors->has('nis')])>@error('nis')<small class="field-error">{{ $message }}</small>@enderror</div>
+                <div class="login__form-intro"><p class="eyebrow">Aktivasi lama</p><h2>Hubungkan akun Google</h2><p>Alur ini hanya untuk data siswa lama yang sudah memiliki NIS dan kode dari petugas. Siswa baru cukup masuk dengan Google dari halaman utama.</p></div>
+                <div class="form-group"><label for="nis">NIS <span class="field-optional">(data lama)</span></label><input id="nis" name="nis" value="{{ old('nis') }}" required autofocus @class(['is-invalid' => $errors->has('nis')])>@error('nis')<small class="field-error">{{ $message }}</small>@enderror</div>
                 <div class="form-group"><label for="activation_code">Kode aktivasi</label><input id="activation_code" name="activation_code" autocomplete="one-time-code" placeholder="LIB-XXXXXXXX" required @class(['is-invalid' => $errors->has('activation_code')])>@error('activation_code')<small class="field-error">{{ $message }}</small>@enderror</div>
-                <button type="submit" class="btn btn--google btn--block"><span aria-hidden="true">G</span>Lanjutkan ke Google</button>
+                <button type="submit" class="btn btn--google btn--block"><span class="google-mark" aria-hidden="true">G</span><span class="google-label">Lanjutkan ke Google</span><span class="google-arrow" aria-hidden="true">&rarr;</span></button>
                 <p class="login__divider"><span>Sudah aktif?</span></p>
                 <a class="btn btn--secondary btn--block" href="{{ route('login') }}">Kembali ke halaman masuk</a>
             </form>

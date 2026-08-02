@@ -31,11 +31,18 @@
         </aside>
 
         <div class="profile-sections">
-            <form class="form-card profile-card" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+            <form class="form-card profile-card" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" data-profile-photo-form>
                 @csrf @method('PATCH')
                 <div class="form-card__header"><h2>Informasi profil</h2><p>Nama dan email ini digunakan untuk mengenali akun Anda di sistem.</p></div>
                 <div class="form-grid">
-                    <div class="form-group form-group--wide"><label for="photo">Foto profil</label><div class="profile-photo-field" data-profile-photo-field><input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" data-profile-photo-input><label for="photo"><span>↑</span><strong data-profile-photo-label>Pilih foto baru</strong><small data-profile-photo-status>JPG, PNG, atau WEBP · maksimal 2 MB</small></label></div>@error('photo')<small class="field-error">{{ $message }}</small>@enderror</div>
+                    <div class="form-group form-group--wide">
+                        <label for="photo">Foto profil</label>
+                        <div class="profile-photo-field" data-profile-photo-field>
+                            <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" data-profile-photo-input>
+                            <label for="photo"><span>↑</span><strong data-profile-photo-label>Pilih foto baru</strong><small data-profile-photo-status>JPG, PNG, atau WEBP · maksimal 2 MB</small></label>
+                        </div>
+                        @error('photo')<small class="field-error">{{ $message }}</small>@enderror
+                    </div>
                     <div class="form-group"><label for="name">Nama lengkap <span>*</span></label><input id="name" name="name" value="{{ old('name', $user->name) }}" required @class(['is-invalid' => $errors->has('name')])>@error('name')<small class="field-error">{{ $message }}</small>@enderror</div>
                     <div class="form-group"><label for="email">Email akun <span>*</span></label><input id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required @class(['is-invalid' => $errors->has('email')])>@error('email')<small class="field-error">{{ $message }}</small>@enderror</div>
                 </div>
@@ -53,6 +60,14 @@
                 <div class="form-actions"><button class="btn btn--secondary" type="submit">Perbarui password</button></div>
             </form>
         </div>
+    </div>
+    <div class="modal-overlay profile-photo-confirm-overlay" data-profile-photo-confirm hidden aria-hidden="true">
+        <section class="modal profile-photo-confirm" role="dialog" aria-modal="true" aria-labelledby="profilePhotoConfirmTitle" aria-describedby="profilePhotoConfirmMessage">
+            <div class="profile-photo-confirm__preview"><img data-profile-photo-confirm-preview alt="Pratinjau foto profil"></div>
+            <h2 id="profilePhotoConfirmTitle">Gunakan foto profil ini?</h2>
+            <p id="profilePhotoConfirmMessage" data-profile-photo-confirm-message>Foto baru akan disimpan saat Anda menekan “Simpan profil”.</p>
+            <div class="modal__actions"><button class="btn btn--secondary" type="button" data-profile-photo-cancel>Ganti foto</button><button class="btn btn--primary" type="button" data-profile-photo-accept>Gunakan foto</button></div>
+        </section>
     </div>
 </section>
 @endsection

@@ -2,13 +2,46 @@
 
 Dokumen ini untuk server production. Jangan salin file .env lokal karena berisi konfigurasi development dan kredensial lokal.
 
+LibSync membutuhkan hosting Laravel/PHP biasa (VPS, shared hosting/cPanel, atau
+server sekolah) dengan PHP 8.2+, MySQL, Composer, dan cron. Arahkan document
+root web server ke folder `public`, bukan ke root project. LibSync tidak
+bergantung pada Railway, Vercel, atau runtime serverless.
+
 ## 1. Siapkan environment
 
 1. Salin .env.production.example menjadi .env.
-2. Isi APP_KEY melalui perintah php artisan key:generate.
-3. Isi URL HTTPS final, database production, dan kredensial Google OAuth.
-4. Pastikan APP_ENV=production, APP_DEBUG=false, SESSION_COOKIE=libsync-session-v2, SESSION_SECURE_COOKIE=true, dan LOG_STACK=stderr agar error production terlihat di Railway Logs. Perubahan nama cookie akan mengeluarkan sesi browser lama satu kali.
-5. Di Google Cloud, tambahkan URL callback dari nilai GOOGLE_REDIRECT_URI sebagai Authorized redirect URI.
+2. Jika `APP_KEY` masih kosong, isi sekali dengan `php artisan key:generate --force`.
+   Jangan menjalankan perintah ini pada deployment berikutnya karena akan
+   membuat sesi/cookie lama dan data terenkripsi tidak dapat dibaca.
+3. Isi `APP_URL` dengan domain sekolah final, misalnya `https://perpustakaan.sekolah.sch.id`. Cover buku, foto profil, manifest, dan CSS otomatis mengikuti URL ini. `ASSET_URL` hanya perlu diisi jika static files memakai CDN/host terpisah.
+4. Pastikan APP_ENV=production, APP_DEBUG=false, SESSION_COOKIE=libsync-session-v2, SESSION_SECURE_COOKIE=true, dan LOG_STACK=stderr agar error production terlihat di log provider. Perubahan nama cookie akan mengeluarkan sesi browser lama satu kali.
+5. Isi kredensial Google OAuth. `GOOGLE_REDIRECT_URI` otomatis mengikuti `APP_URL`; jika ingin memakai host autentikasi terpisah, isi nilainya secara eksplisit.
+6. Jika semua akun memakai email sekolah, isi `GOOGLE_ALLOWED_DOMAIN` (contoh `sekolah.sch.id`).
+7. Di Google Cloud, tambahkan URL callback dari nilai `GOOGLE_REDIRECT_URI` sebagai Authorized redirect URI.
+
+Secara default, Google login membuat profil `student` dan data anggota baru
+tanpa NIS. Pertahankan `GOOGLE_AUTO_REGISTER_STUDENTS=true` untuk sekolah tanpa
+NIS. Set ke `false` hanya bila petugas ingin membuat data anggota lebih dulu.
+
+### Saat domain sekolah sudah siap
+
+Di provider hosting, ubah hanya variabel berikut lalu lakukan redeploy:
+
+```dotenv
+APP_URL=https://perpustakaan.sekolah.sch.id
+```
+
+`ASSET_URL` dan `GOOGLE_REDIRECT_URI` boleh diisi dengan URL HTTPS yang sama jika
+provider hosting tidak mendukung referensi variabel. Jika dibiarkan kosong/tidak
+dibuat, aplikasi menurunkan keduanya dari `APP_URL`.
+
+Tambahkan domain yang sama ke DNS hosting dan tunggu sertifikat HTTPS aktif. Jangan mengubah URL secara manual di Blade atau controller.
+
+Untuk subdomain, buat record `A` (atau `CNAME` ke host deployment) seperti
+`perpustakaan.sekolah.sch.id`, arahkan document root ke folder `public`, lalu
+isi `APP_URL` dengan subdomain tersebut. Domain utama dan subdomain sama-sama
+didukung; yang penting URL pada `APP_URL` dan callback Google harus identik,
+termasuk `https://` dan path `/auth/google/callback`.
 
 ## 2. Instalasi aplikasi
 
@@ -17,15 +50,21 @@ Jalankan dari folder project:
     composer install --no-dev --optimize-autoloader
     npm ci
     npm run build
-    php artisan migrate --force
+    php artisan migrate --seed --force
     php artisan storage:link
     php artisan optimize
+
+Jika hosting tidak menyediakan Node.js, jalankan `npm ci` dan `npm run build`
+di komputer/CI lalu unggah folder `public/build` bersama project. Web server
+tetap harus menunjuk ke folder `public`.
 
 Buat admin pertama secara interaktif. Jangan menaruh password di history terminal:
 
     php artisan library:create-admin --name="Nama Admin" --email="admin@sekolah.sch.id"
 
-Seeder production hanya menyiapkan aturan sistem; akun demo tidak dibuat.
+Seeder production hanya menyiapkan aturan sistem; akun demo tidak dibuat. Jika
+migrasi sudah pernah dijalankan tanpa `--seed`, jalankan `php artisan db:seed --force`
+sekali sebelum membuat admin pertama.
 
 ## 3. Scheduler dan queue
 
@@ -44,6 +83,12 @@ Jika notifikasi atau queue kelak diganti dari database ke driver asynchronous, j
 - Database dibackup otomatis dan pemulihan pernah diuji.
 - HTTPS aktif dan sertifikat valid.
 - Redirect URI Google sama persis dengan GOOGLE_REDIRECT_URI.
+- Setelah env production terisi, jalankan `php artisan library:diagnose-oauth`
+  (tambahkan `--verify-client` bila server boleh menghubungi Google) dan pastikan
+  tidak ada pemeriksaan berstatus GAGAL.
 - Tidak ada akun demo atau password default.
 - Web server hanya mengekspos folder public.
 - storage dan bootstrap/cache dapat ditulis oleh proses web server.
+- Endpoint health `GET /up` mengembalikan status 200 setelah deploy.
+- Jalankan `composer validate --strict`, `php artisan test`, dan `npm run build`
+  di CI sebelum perubahan dipromosikan.

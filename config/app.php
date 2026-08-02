@@ -1,5 +1,13 @@
 <?php
 
+$assetUrl = env('ASSET_URL');
+
+// Some hosting dashboards store `${APP_URL}` literally instead of expanding
+// it. Treat that placeholder as unset so assets still use the request/domain.
+if (! is_string($assetUrl) || trim($assetUrl) === '' || str_contains($assetUrl, '${APP_URL}')) {
+    $assetUrl = null;
+}
+
 return [
 
     /*
@@ -53,6 +61,19 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Asset URL
+    |--------------------------------------------------------------------------
+    |
+    | Leave this equal to APP_URL for the school domain. It is optional so a
+    | CDN or a separate static origin can be introduced later without changing
+    | any Blade template.
+    |
+    */
+
+    'asset_url' => $assetUrl,
 
     /*
     |--------------------------------------------------------------------------

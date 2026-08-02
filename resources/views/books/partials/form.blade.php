@@ -68,9 +68,9 @@
         <label for="cover_image">Cover buku {{ $book ? '(opsional)' : '*' }}</label>
         <div class="file-field">
             @if ($book?->cover_image)
-                <img class="file-field__preview" src="{{ asset('storage/' . $book->cover_image) }}" alt="Cover saat ini">
+                <x-book-cover :book="$book" size="form" class="file-field__preview" alt="Cover saat ini" />
             @else
-                <div class="file-field__preview" hidden></div>
+                <div class="file-field__preview book-cover book-cover--form" hidden aria-hidden="true"></div>
             @endif
             <label for="cover_image" class="file-field__label"><span aria-hidden="true">↑</span><strong>Unggah cover</strong><small>JPG, PNG, atau WEBP</small></label>
             <input id="cover_image" type="file" name="cover_image" accept="image/*" {{ $book ? '' : 'required' }}>

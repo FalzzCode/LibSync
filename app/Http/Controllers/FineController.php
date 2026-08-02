@@ -18,6 +18,16 @@ class FineController extends Controller
     public function index(Request $request): View
     {
         $fines = Fine::with(['member', 'borrowing.book', 'payments.receiver'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = $request->string('search')->trim()->substr(0, 120)->toString();
+                if ($term === '') {
+                    return;
+                }
+                $query->where(function ($query) use ($term) {
+                    $query->whereHas('member', fn ($member) => $member->where('name', 'like', "%{$term}%"))
+                        ->orWhereHas('borrowing.book', fn ($book) => $book->where('title', 'like', "%{$term}%"));
+                });
+            })
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
             ->latest()
             ->get();

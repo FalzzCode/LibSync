@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Book;
 use App\Models\BookCopy;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
@@ -14,11 +15,18 @@ class BookCopyController extends Controller
     {
         $copies = BookCopy::with('book:id,title,book_code')
             ->when($request->filled('search'), function ($query) use ($request) {
-                $term = $request->string('search')->trim();
+                $term = $request->string('search')->trim()->substr(0, 120)->toString();
+                if ($term === '') {
+                    return;
+                }
                 $query->where(fn ($q) => $q->where('inventory_code', 'like', "%{$term}%")->orWhere('barcode', 'like', "%{$term}%")->orWhereHas('book', fn ($book) => $book->where('title', 'like', "%{$term}%")));
             })->latest()->get();
+        $books = Book::query()
+            ->whereNull('archived_at')
+            ->orderBy('title')
+            ->get(['id', 'title', 'book_code']);
 
-        return view('book-copies.index', compact('copies'));
+        return view('book-copies.index', compact('copies', 'books'));
     }
 
     public function store(Request $request): RedirectResponse

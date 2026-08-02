@@ -16,8 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Railway terminates TLS at its edge proxy. Trust the forwarded
-        // scheme/host so generated asset and route URLs stay HTTPS.
+        // The hosting edge terminates TLS before PHP receives the request.
+        // Trust forwarded scheme/host so generated URLs stay on the HTTPS
+        // custom domain.
         $middleware->trustProxies(at: '*');
 
         $middleware->alias([
@@ -29,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // If an infrastructure failure happens before the controller can catch
         // it (for example while a session is being read), avoid showing
         // Laravel's generic production 500 page. The exception is still sent
-        // to Railway stderr with a safe, actionable label.
+        // to the provider log stream with a safe, actionable label.
         $exceptions->render(function (Throwable $exception, Request $request): ?Response {
             if (! $request->is('auth/google*') || $exception instanceof DecryptException) {
                 return null;

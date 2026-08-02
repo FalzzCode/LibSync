@@ -1,3 +1,17 @@
+/* Keep the document viewport stable at every zoom level. Data tables keep
+   their own touch region, so the page itself never grows a second scrollbar. */
+html,
+body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+    html,
+    body { overflow-x: hidden; }
+}
+
 @media (max-width: 760px) {
     html,
     body {

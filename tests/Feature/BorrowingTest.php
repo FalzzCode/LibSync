@@ -168,4 +168,73 @@ class BorrowingTest extends TestCase
         $this->assertDatabaseHas('warnings', ['member_id' => $member->id, 'type' => 'loan_limit']);
         $this->assertSame(3, Borrowing::where('member_id', $member->id)->count());
     }
+
+    public function test_blokir_batas_pinjaman_terbuka_kembali_setelah_satu_buku_dikembalikan(): void
+    {
+        $user = $this->user();
+        $member = Member::create(['name' => 'Akses Kembali', 'phone' => '08123456785']);
+        $borrowings = collect(range(1, 3))->map(function () use ($user, $member) {
+            $book = $this->book();
+
+            return Borrowing::create([
+                'member_id' => $member->id,
+                'book_id' => $book->id,
+                'user_id' => $user->id,
+                'borrowed_at' => today()->subDays(2),
+                'due_date' => today()->addDays(5),
+                'status' => 'borrowed',
+            ]);
+        });
+        $member->update([
+            'account_status' => 'blocked',
+            'block_type' => 'automatic',
+            'block_reason' => 'Memiliki 3 pinjaman aktif; batas maksimal adalah 3.',
+            'blocked_at' => now(),
+        ]);
+
+        $this->actingAs($user)->post(route('borrowings.return', $borrowings->first()), [
+            'returned_at' => today()->toDateString(),
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('members', [
+            'id' => $member->id,
+            'account_status' => 'normal',
+            'block_type' => null,
+        ]);
+    }
+
+    public function test_persetujuan_ditolak_jika_anggota_masih_memiliki_buku_yang_sama(): void
+    {
+        $user = $this->user();
+        $member = Member::create(['name' => 'Peminjam Ganda', 'phone' => '08123456784']);
+        $book = $this->book(2);
+        Borrowing::create([
+            'member_id' => $member->id,
+            'book_id' => $book->id,
+            'user_id' => $user->id,
+            'borrowed_at' => today(),
+            'due_date' => today()->addDays(7),
+            'status' => 'borrowed',
+        ]);
+        $request = Borrowing::create([
+            'member_id' => $member->id,
+            'book_id' => $book->id,
+            'user_id' => $user->id,
+            'borrowed_at' => today(),
+            'due_date' => today()->addDays(7),
+            'status' => 'requested',
+            'requested_at' => now(),
+        ]);
+
+        $this->actingAs($user)->from(route('borrowings.index'))
+            ->post(route('borrowings.approve', $request))
+            ->assertRedirect(route('borrowings.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('borrowings', [
+            'id' => $request->id,
+            'status' => 'rejected',
+        ]);
+        $this->assertSame(2, $book->fresh()->stock);
+    }
 }

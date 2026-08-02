@@ -5,16 +5,21 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
     // Menampilkan daftar semua kategori
-    public function index(): View
+    public function index(Request $request): View
     {
-        $categories = Category::latest()->get();
+        $search = $request->string('search')->trim()->toString();
+        $categories = Category::query()
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
+            ->latest()
+            ->get();
 
-        return view('categories.index', compact('categories'));
+        return view('categories.index', compact('categories', 'search'));
     }
 
     // Menampilkan form tambah kategori

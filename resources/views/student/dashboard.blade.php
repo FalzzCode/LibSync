@@ -20,15 +20,15 @@
             </div>
         </div>
         <div class="student-hero__insight" aria-label="Status akun">
-            <span class="student-hero__signal {{ $member->account_status === 'blocked' ? 'student-hero__signal--warning' : '' }}"></span>
-            <small>{{ $member->account_status === 'blocked' ? 'Akses peminjaman dibatasi' : 'Akun siap digunakan' }}</small>
-            <strong>{{ $member->account_status === 'blocked' ? 'Perlu perhatian' : 'Status baik' }}</strong>
+            <span class="student-hero__signal {{ $accountReady ? '' : 'student-hero__signal--warning' }}"></span>
+            <small>{{ $accountStatusHint }}</small>
+            <strong>{{ $accountReady ? 'Status baik' : 'Perlu perhatian' }}</strong>
         </div>
         <span class="student-hero__bookmark" aria-hidden="true"><i></i><b></b><em></em></span>
     </header>
 
     <section class="student-summary" aria-label="Ringkasan aktivitas">
-        <a class="student-summary__card" href="#pinjaman"><span class="student-summary__icon">↺</span><span><small>Pinjaman aktif</small><strong>{{ $openBorrowings->count() }}</strong><em>{{ $openBorrowings->isEmpty() ? 'Belum ada buku dipinjam' : 'Lihat detail pinjaman' }}</em></span><b aria-hidden="true">→</b></a>
+        <a class="student-summary__card" href="#pinjaman"><span class="student-summary__icon">↺</span><span><small>Pinjaman aktif</small><strong>{{ $openBorrowings->count() }}</strong><em>{{ $pendingBorrowings->isNotEmpty() ? $pendingBorrowings->count().' menunggu persetujuan' : ($openBorrowings->isEmpty() ? 'Belum ada buku dipinjam' : 'Lihat detail pinjaman') }}</em></span><b aria-hidden="true">→</b></a>
         <a class="student-summary__card {{ $overdueCount ? 'student-summary__card--alert' : '' }}" href="#pinjaman"><span class="student-summary__icon">!</span><span><small>Perlu dikembalikan</small><strong>{{ $overdueCount }}</strong><em>{{ $overdueCount ? 'Lewat dari jatuh tempo' : 'Tidak ada keterlambatan' }}</em></span><b aria-hidden="true">→</b></a>
         <a class="student-summary__card {{ $unpaidFines->isNotEmpty() ? 'student-summary__card--alert' : '' }}" href="#denda"><span class="student-summary__icon">Rp</span><span><small>Denda terbuka</small><strong>Rp{{ number_format($unpaidFines->sum(fn($fine) => $fine->balance), 0, ',', '.') }}</strong><em>{{ $unpaidFines->count() ? $unpaidFines->count().' tagihan menunggu' : 'Tidak ada tagihan' }}</em></span><b aria-hidden="true">→</b></a>
     </section>
@@ -49,7 +49,9 @@
             <div @class(['student-loan-list', 'student-loan-list--empty' => $borrowings->isEmpty()])>
             @forelse($borrowings as $borrowing)
                 <article class="student-loan-row">
-                    <span class="student-loan-row__icon {{ $borrowing->status === 'returned' ? 'student-loan-row__icon--returned' : ($borrowing->is_overdue ? 'student-loan-row__icon--warning' : '') }}">{{ $borrowing->status === 'returned' ? '✓' : '▤' }}</span>
+                    <x-book-cover :book="$borrowing->book" size="loan" class="student-loan-row__cover">
+                        <span class="student-loan-row__cover-status {{ $borrowing->status === 'returned' ? 'student-loan-row__cover-status--returned' : ($borrowing->is_overdue ? 'student-loan-row__cover-status--warning' : '') }}" aria-hidden="true"></span>
+                    </x-book-cover>
                     <div class="student-loan-row__detail"><strong>{{ $borrowing->book->title }}</strong><small>{{ $borrowing->status === 'returned' ? 'Dikembalikan '.$borrowing->returned_at?->translatedFormat('d M Y') : ($borrowing->status === 'requested' ? 'Menunggu persetujuan petugas' : 'Jatuh tempo '.$borrowing->due_date->translatedFormat('d M Y')) }}</small></div>
                     <div class="student-loan-row__action">
                     @if($borrowing->status === 'borrowed')

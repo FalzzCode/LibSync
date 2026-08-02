@@ -1,6 +1,7 @@
 import './bootstrap';
 
 const solarGlyphs = {
+    'Rp': 'solar:wallet-money-linear', '\u2318': 'solar:code-square-linear', '\u2699': 'solar:settings-linear', '\u2699\uFE0F': 'solar:settings-linear', '\u2190': 'solar:arrow-left-linear', '\u231B': 'solar:clock-circle-linear', '\u21A9': 'solar:alt-arrow-left-linear',
     '⌂': 'solar:home-2-linear', '▤': 'solar:book-2-linear', '▦': 'solar:widget-5-linear',
     '↺': 'solar:refresh-circle-linear', '↻': 'solar:refresh-circle-linear', '!': 'solar:danger-triangle-linear',
     '#': 'solar:hashtag-linear', '♙': 'solar:users-group-rounded-linear', '◇': 'solar:widget-5-linear',
@@ -11,30 +12,79 @@ const solarGlyphs = {
     '☷': 'solar:list-linear', '◐': 'solar:moon-stars-linear', '+': 'solar:add-circle-linear',
 };
 
+const isIconifyReady = () => Boolean(window.customElements?.get('iconify-icon'));
+
+const createSolarIcon = (icon) => {
+    const element = document.createElement('iconify-icon');
+    element.className = 'solar-icon';
+    element.setAttribute('icon', icon);
+    element.setAttribute('aria-hidden', 'true');
+    return element;
+};
+
 const replaceSolarIcons = (root = document) => {
-    const selector = '.sidebar__link > span, .header__menu-toggle, .header__profile > span:last-child, .mobile-tabbar span, .stat-card__icon, .stat-card > b, .quick-actions > a > span, .tip-card__icon, .activity-row__icon, .empty-state > span, .search-field > span, .icon-button, .view-toggle__btn, .alert > span, .file-field__label > span, .profile-photo-field label > span';
-    root.querySelectorAll(selector).forEach((element) => {
+    // Keep the readable glyph fallback until Iconify has registered its custom element.
+    if (!isIconifyReady()) return;
+
+    const selector = '.sidebar__link > span, .header__menu-toggle, .header__profile > span:last-child, .mobile-tabbar span, .stat-card__icon, .stat-card > b, .quick-actions > a > span, .tip-card__icon, .activity-row__icon, .task-item__icon, .student-summary__icon, .empty-state > span, .search-field > span, .icon-button, .view-toggle__btn, .alert > span, .file-field__label > span, .profile-photo-field label > span, .metric-card__icon';
+    const explicitSelector = '[data-solar-icon]';
+    const explicitElements = [];
+    if (root.matches?.(explicitSelector)) explicitElements.push(root);
+    root.querySelectorAll(explicitSelector).forEach((element) => explicitElements.push(element));
+    explicitElements.forEach((element) => {
+        if (element.querySelector('iconify-icon')) return;
+        const icon = element.dataset.solarIcon;
+        if (!icon) return;
+        element.setAttribute('aria-hidden', 'true');
+        element.replaceChildren(createSolarIcon(icon));
+    });
+
+    const elements = [];
+    if (root.matches?.(selector)) elements.push(root);
+    root.querySelectorAll(selector).forEach((element) => elements.push(element));
+    elements.forEach((element) => {
         const glyph = element.textContent.trim();
-        const icon = solarGlyphs[glyph];
+        const icon = element.dataset.solarIcon || solarGlyphs[glyph];
         if (!icon || element.querySelector('iconify-icon')) return;
         element.setAttribute('aria-hidden', 'true');
-        element.innerHTML = `<iconify-icon class="solar-icon" icon="${icon}"></iconify-icon>`;
+        element.replaceChildren(createSolarIcon(icon));
     });
 
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const textNodes = [];
+    const inlineGlyphPattern = /[→←↗+]/g;
     while (walker.nextNode()) {
         const node = walker.currentNode;
-        const icon = solarGlyphs[node.nodeValue.trim()];
-        if (icon && !node.parentElement?.closest('iconify-icon')) textNodes.push([node, icon]);
+        if (node.parentElement?.closest('iconify-icon, [data-solar-icon]')) continue;
+        const value = node.nodeValue;
+        const icon = solarGlyphs[value.trim()];
+        if (icon) {
+            textNodes.push([node, createSolarIcon(icon)]);
+            continue;
+        }
+        inlineGlyphPattern.lastIndex = 0;
+        if (!inlineGlyphPattern.test(value)) {
+            inlineGlyphPattern.lastIndex = 0;
+            continue;
+        }
+        inlineGlyphPattern.lastIndex = 0;
+        const fragment = document.createDocumentFragment();
+        let cursor = 0;
+        for (const match of value.matchAll(inlineGlyphPattern)) {
+            if (match.index > cursor) fragment.append(value.slice(cursor, match.index));
+            fragment.append(createSolarIcon(solarGlyphs[match[0]]));
+            cursor = match.index + match[0].length;
+        }
+        if (cursor < value.length) fragment.append(value.slice(cursor));
+        textNodes.push([node, fragment]);
     }
-    textNodes.forEach(([node, icon]) => {
-        const element = document.createElement('iconify-icon');
-        element.className = 'solar-icon';
-        element.setAttribute('icon', icon);
-        element.setAttribute('aria-hidden', 'true');
-        node.replaceWith(element);
-    });
+    textNodes.forEach(([node, replacement]) => node.replaceWith(replacement));
+};
+
+const waitForIconify = () => {
+    const whenDefined = window.customElements?.whenDefined;
+    if (typeof whenDefined !== 'function') return;
+    whenDefined.call(window.customElements, 'iconify-icon').then(() => replaceSolarIcons());
 };
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -46,6 +96,28 @@ const canEnhance = !reduceMotion && !lowPowerDevice;
 
 document.addEventListener('DOMContentLoaded', () => {
     replaceSolarIcons();
+    waitForIconify();
+    document.querySelectorAll('[data-search-clear]').forEach((clearButton) => {
+        const wrapper = clearButton.closest('.search-field, .student-catalog-search');
+        const input = wrapper?.querySelector('input[type="search"]');
+        const form = input?.form;
+        if (!input) return;
+
+        const syncClearButton = () => {
+            clearButton.hidden = input.value.length === 0;
+        };
+
+        input.addEventListener('input', syncClearButton);
+        input.addEventListener('search', syncClearButton);
+        clearButton.addEventListener('click', () => {
+            input.value = '';
+            syncClearButton();
+            input.focus();
+            if (form?.requestSubmit) form.requestSubmit();
+            else form?.submit();
+        });
+        syncClearButton();
+    });
     new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) replaceSolarIcons(node);
     }))).observe(document.body, { childList: true, subtree: true });
@@ -68,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try { sessionStorage.setItem('ruang-baca:navigation-pending', String(Date.now())); } catch (_) {}
     };
     const loaderTypeFor = (pathname) => {
+        if (/^\/books\/\d+$/.test(pathname) || /^\/borrowings\/\d+$/.test(pathname)) return 'detail';
         const routes = {
             '/dashboard': 'dashboard', '/books': 'books', '/book-copies': 'copies', '/members': 'members',
             '/categories': 'categories', '/borrowings': 'borrowings', '/warnings': 'warnings', '/fines': 'fines',

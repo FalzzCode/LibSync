@@ -10,6 +10,7 @@ use App\Models\Fine;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class StudentPortalTest extends TestCase
@@ -21,7 +22,7 @@ class StudentPortalTest extends TestCase
         $student = User::factory()->create(['role' => 'student']);
         Member::create(['user_id' => $student->id, 'name' => 'Siswa Portal', 'phone' => '08123456789']);
 
-        $this->actingAs($student)->get(route('student.dashboard'))->assertOk()->assertSee('Siswa Portal');
+        $this->actingAs($student)->get(route('student.dashboard'))->assertOk()->assertSee('Siswa Portal')->assertSee('Portal siswa');
         $this->actingAs($student)->get(route('books.index'))->assertForbidden();
     }
 
@@ -52,6 +53,30 @@ class StudentPortalTest extends TestCase
         ])->assertRedirect(route('members.index'));
 
         $this->assertDatabaseHas('members', ['name' => 'Anggota Tanpa Akun', 'phone' => '08123456787']);
+    }
+
+    public function test_petugas_dapat_mengatur_ulang_password_akun_siswa_dari_data_anggota(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'email' => 'naufal@example.test',
+            'password' => Hash::make('password-lama'),
+        ]);
+        $member = Member::create([
+            'user_id' => $student->id,
+            'name' => 'Naufal',
+            'phone' => '08123456789',
+        ]);
+
+        $this->actingAs($staff)->put(route('members.update', $member), [
+            'name' => 'Naufal',
+            'phone' => '08123456789',
+            'account_email' => 'naufal@example.test',
+            'account_password' => 'password-baru',
+        ])->assertRedirect(route('members.index'));
+
+        $this->assertTrue(Hash::check('password-baru', $student->fresh()->password));
     }
 
     public function test_pengembalian_buku_memberi_notifikasi_kepada_antrean_berikutnya(): void
@@ -114,8 +139,16 @@ class StudentPortalTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($staff)->get(route('backups.download'))->assertForbidden();
-        $this->actingAs($admin)->get(route('backups.download'))
-            ->assertOk()
-            ->assertHeader('content-type', 'application/json; charset=UTF-8');
+        $response = $this->actingAs($admin)->get(route('backups.download'));
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/json; charset=UTF-8')
+            ->assertHeader('cache-control', 'no-store, private');
+        ob_start();
+        $response->sendContent();
+        $body = (string) ob_get_clean();
+        $snapshot = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('ruang-baca-data-snapshot', $snapshot['format']);
+        $this->assertArrayHasKey('users', $snapshot['data']);
+        $this->assertStringNotContainsString('password', $body);
     }
 }

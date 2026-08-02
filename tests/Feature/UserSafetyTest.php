@@ -40,4 +40,30 @@ class UserSafetyTest extends TestCase
 
         $this->assertSame('student', $student->fresh()->role);
     }
+
+    public function test_staff_tidak_dapat_mengelola_akun_admin_dan_staff(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $anotherStaff = User::factory()->create(['role' => 'staff']);
+
+        $this->actingAs($staff)->get(route('users.index'))->assertForbidden();
+        $this->actingAs($staff)->get(route('users.create'))->assertForbidden();
+        $this->actingAs($staff)->get(route('users.edit', $admin))->assertForbidden();
+        $this->actingAs($staff)->post(route('users.store'), [
+            'name' => 'Admin Baru',
+            'email' => 'admin-baru@example.test',
+            'password' => 'password123',
+            'role' => 'admin',
+        ])->assertForbidden();
+        $this->actingAs($staff)->put(route('users.update', $anotherStaff), [
+            'name' => 'Staff Diubah',
+            'email' => $anotherStaff->email,
+            'role' => 'admin',
+        ])->assertForbidden();
+        $this->actingAs($staff)->delete(route('users.destroy', $anotherStaff))->assertForbidden();
+
+        $this->assertSame('admin', $admin->fresh()->role);
+        $this->assertSame('staff', $anotherStaff->fresh()->role);
+    }
 }

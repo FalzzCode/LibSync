@@ -20,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Railway serves the application through an HTTPS edge proxy. Keep
+        // Hosting providers commonly terminate TLS at an edge proxy. Keep
         // generated asset(), route(), and redirect URLs secure even when the
         // upstream PHP process receives the request over HTTP.
         $appUrl = (string) config('app.url');

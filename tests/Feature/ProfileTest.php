@@ -90,6 +90,17 @@ class ProfileTest extends TestCase
         $this->actingAs($user->fresh())->get(route('profile.photo', $user))->assertOk();
     }
 
+    public function test_profile_page_requires_confirmation_before_using_a_new_photo(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('data-profile-photo-confirm', false)
+            ->assertSee('Gunakan foto profil ini?');
+    }
+
     public function test_profile_email_must_remain_unique(): void
     {
         $user = User::factory()->create(['email' => 'pemilik@example.test']);

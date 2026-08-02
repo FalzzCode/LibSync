@@ -1,0 +1,68 @@
+/* Dashboard circulation and metric cards */
+.stats-grid--overview .stat-card { min-height: 112px; align-items: flex-start; overflow: hidden; }
+.stats-grid--overview .stat-card::after { content: ''; position: absolute; width: 84px; height: 84px; right: -30px; bottom: -34px; border: 1px solid currentColor; border-radius: 50%; opacity: .08; }
+.stats-grid--overview .stat-card__icon { flex: 0 0 auto; display: grid; place-items: center; }
+.stats-grid--overview .stat-card__icon iconify-icon, .metric-card__icon iconify-icon { width: 20px; height: 20px; flex: 0 0 auto; }
+.transaction-stats--enhanced { gap: 16px; }
+.transaction-stats--enhanced .metric-card { position: relative; min-height: 166px; padding: 18px 19px; overflow: hidden; isolation: isolate; }
+.metric-card::before { content: ''; position: absolute; inset: auto -22px -40px auto; width: 116px; height: 116px; border-radius: 50%; background: var(--metric-tint, #e8f2ed); opacity: .68; z-index: -1; }
+.metric-card--active { --metric-accent: #277761; --metric-tint: #e7f4ee; }
+.metric-card--overdue { --metric-accent: #b6403a; --metric-tint: #fff0ee; }
+.metric-card--returned { --metric-accent: #4f70a8; --metric-tint: #edf2fb; }
+.metric-card--fine { --metric-accent: #a96d1a; --metric-tint: #fff5e7; }
+.metric-card__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 17px; }
+.metric-card__icon { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid color-mix(in srgb, var(--metric-accent) 22%, transparent); border-radius: 12px; background: var(--metric-tint); color: var(--metric-accent); font-size: 16px; font-weight: 800; line-height: 1; }
+.metric-card__icon iconify-icon { width: 24px; height: 24px; }
+.metric-card__icon[data-solar-icon$="wallet-money-linear"], .metric-card__icon[data-solar-icon$="wallet-money-bold"] { font-size: 11px; letter-spacing: -.04em; }
+.metric-card__status { padding: 4px 8px; border-radius: 999px; color: var(--metric-accent); background: var(--metric-tint); font-size: 10px; font-weight: 800; letter-spacing: .02em; }
+.metric-card__status--safe { color: #27704d; background: #e7f5ec; }
+.metric-card small, .metric-card span:last-child { display: block; color: var(--muted); font-size: 11px; }
+.metric-card strong { display: block; margin: 3px 0 2px; color: var(--ink); font-size: clamp(24px, 2.1vw, 30px); line-height: 1.05; letter-spacing: -.04em; }
+.circulation-card { min-width: 0; }
+.insight-grid > .insight-card:first-child { min-width: 0; }
+.insight-grid > .insight-card:first-child > .eyebrow { display: inline-flex; margin-bottom: 5px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--forest); background: var(--mint); font-size: 10px; letter-spacing: .04em; }
+.insight-grid > .insight-card:first-child > h2 { margin-top: 1px; }
+.insight-grid > .insight-card:first-child > h2::after { content: 'Peminjaman dibanding pengembalian'; display: block; margin-top: 6px; color: var(--muted); font: 400 12px/1.45 var(--font); letter-spacing: 0; }
+.insight-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+.insight-card__header .eyebrow { margin-bottom: 5px; }
+.insight-card__description { max-width: 410px; margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.period-chip { flex: 0 0 auto; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--forest); background: var(--mint); font-size: 10px; font-weight: 800; white-space: nowrap; }
+.circulation-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 19px; }
+.circulation-summary__item { padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb, var(--surface) 86%, var(--mint)); }
+.circulation-summary__item small, .circulation-summary__item strong { display: block; }
+.circulation-summary__item small { color: var(--muted); font-size: 10px; }
+.circulation-summary__item strong { margin-top: 3px; color: var(--ink); font-size: 20px; line-height: 1; }
+.mini-chart__caption { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 4px; color: var(--muted); font-size: 10px; }
+.circulation-card .mini-chart { position: relative; height: 188px; align-items: stretch; gap: 5px; padding: 15px 3px 0; border-bottom: 1px solid var(--line); background: repeating-linear-gradient(to bottom, transparent 0, transparent 40px, color-mix(in srgb, var(--line) 70%, transparent) 41px); }
+.insight-grid > .insight-card:first-child .mini-chart { position: relative; height: 188px; align-items: stretch; gap: 5px; padding: 15px 3px 0; background: repeating-linear-gradient(to bottom, transparent 0, transparent 40px, color-mix(in srgb, var(--line) 70%, transparent) 41px); }
+.circulation-card .mini-chart__day { position: relative; z-index: 1; min-width: 28px; grid-template-rows: 1fr 17px 15px; gap: 4px; }
+.insight-grid > .insight-card:first-child .mini-chart__day { position: relative; z-index: 1; min-width: 28px; grid-template-rows: 1fr 17px; gap: 4px; }
+.circulation-card .mini-chart__bars { align-items: end; height: 100%; gap: 4px; }
+.circulation-card .mini-chart__bars i, .circulation-card .mini-chart__bars b { width: 10px; min-height: 4px; border-radius: 5px 5px 2px 2px; box-shadow: 0 3px 6px rgb(22 69 62 / 10%); }
+.insight-grid > .insight-card:first-child .mini-chart__bars i, .insight-grid > .insight-card:first-child .mini-chart__bars b { width: 10px; min-height: 4px; border-radius: 5px 5px 2px 2px; box-shadow: 0 3px 6px rgb(22 69 62 / 10%); }
+.circulation-card .mini-chart__bars i { background: linear-gradient(180deg, #4a9c83, #277761); }
+.circulation-card .mini-chart__bars b { background: linear-gradient(180deg, #e4bd7d, #c48d3b); }
+.insight-grid > .insight-card:first-child .mini-chart__bars i { background: linear-gradient(180deg, #4a9c83, #277761); }
+.insight-grid > .insight-card:first-child .mini-chart__bars b { background: linear-gradient(180deg, #e4bd7d, #c48d3b); }
+.circulation-card .mini-chart__day small { align-self: center; font-size: 10px; font-weight: 700; }
+.insight-grid > .insight-card:first-child .mini-chart__day small { align-self: center; font-size: 10px; font-weight: 700; }
+.mini-chart__day-total { color: var(--muted); font-size: 9px; line-height: 1; }
+.circulation-card .chart-legend { align-items: center; margin-top: 12px; }
+.insight-grid > .insight-card:first-child .chart-legend { align-items: center; margin-top: 12px; }
+.chart-legend__hint { margin-left: auto; color: var(--muted); font-size: 10px; }
+.chart-empty-state { min-height: 220px; padding: 28px 16px; border: 1px dashed var(--line); border-radius: 13px; background: color-mix(in srgb, var(--surface) 90%, var(--mint)); }
+.chart-empty-state iconify-icon { width: 30px; height: 30px; color: var(--forest); }
+.chart-empty-state strong, .chart-empty-state p { display: block; }
+.chart-empty-state strong { margin-top: 9px; color: var(--ink); font-size: 14px; }
+.chart-empty-state p { max-width: 320px; margin: 5px auto 14px; color: var(--muted); font-size: 12px; }
+.chart-empty-state .btn { min-height: 36px; font-size: 12px; }
+@media (max-width: 760px) { .transaction-stats--enhanced .metric-card { min-height: 146px; padding: 15px; } .metric-card__top { margin-bottom: 12px; } .metric-card__icon { width: 36px; height: 36px; } .metric-card__icon iconify-icon { width: 21px; height: 21px; } .insight-card__header { gap: 10px; } .insight-card__description { font-size: 11px; } .period-chip { padding: 6px 8px; } }
+@media (max-width: 430px) { .circulation-summary__item { padding: 9px; } .circulation-summary__item strong { font-size: 17px; } .circulation-card .mini-chart { height: 175px; gap: 2px; padding-left: 0; padding-right: 0; } .circulation-card .mini-chart__bars { gap: 2px; } .circulation-card .mini-chart__bars i, .circulation-card .mini-chart__bars b { width: 8px; } .chart-legend__hint { display: none; } }
+:root[data-theme="dark"] .metric-card__status--safe { color: #a8dfbb; background: #214632; }
+:root[data-theme="dark"] .metric-card--active { --metric-accent: #86d8b2; --metric-tint: #214b40; }
+:root[data-theme="dark"] .metric-card--overdue { --metric-accent: #ffaaa2; --metric-tint: #492c2c; }
+:root[data-theme="dark"] .metric-card--returned { --metric-accent: #b6cbff; --metric-tint: #293c5b; }
+:root[data-theme="dark"] .metric-card--fine { --metric-accent: #f3c47c; --metric-tint: #4b3a24; }
+:root[data-theme="dark"] .metric-card__icon { border-color: color-mix(in srgb, var(--metric-accent) 40%, transparent); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 4%); }
+:root[data-theme="dark"] .period-chip { color: #c5e2d6; background: #24463d; }
+:root[data-theme="dark"] .circulation-summary__item, :root[data-theme="dark"] .chart-empty-state { background: color-mix(in srgb, var(--surface) 88%, #24463d); }

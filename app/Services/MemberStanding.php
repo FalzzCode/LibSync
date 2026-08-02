@@ -34,12 +34,16 @@ class MemberStanding
         if ($member->block_type !== 'automatic') {
             return;
         }
-        $hasOpenLoans = Borrowing::query()->where('member_id', $member->id)->open()->exists();
+        $activeLoans = Borrowing::query()->where('member_id', $member->id)->open()->count();
+        $maxLoans = (int) SystemSetting::value('max_active_loans', 3);
         $hasUnpaidFines = Fine::query()->where('member_id', $member->id)->whereIn('status', ['unpaid', 'partial'])->exists();
-        if (! $hasOpenLoans && ! $hasUnpaidFines) {
+        // Re-enable borrowing as soon as the member is below the configured
+        // limit and has no unpaid fine. A student should not need to return
+        // every other book before being allowed to borrow one again.
+        if ($activeLoans < $maxLoans && ! $hasUnpaidFines) {
             $before = $member->only(['account_status', 'block_type', 'block_reason', 'blocked_at']);
             $member->update(['account_status' => 'normal', 'block_type' => null, 'block_reason' => null, 'blocked_at' => null]);
-            Warning::create(['member_id' => $member->id, 'type' => 'account_unblocked', 'level' => 'info', 'title' => 'Akun aktif kembali', 'message' => 'Seluruh kewajiban siswa telah diselesaikan; blokir otomatis dibuka.']);
+            Warning::create(['member_id' => $member->id, 'type' => 'account_unblocked', 'level' => 'info', 'title' => 'Akses peminjaman aktif kembali', 'message' => "Pinjaman aktif turun di bawah batas {$maxLoans}; siswa dapat mengajukan buku lagi."]);
             ActivityLogger::write('unblock_automatic', 'member', $member, $before, $member->fresh()->only(['account_status', 'block_type', 'block_reason', 'blocked_at']));
         }
     }

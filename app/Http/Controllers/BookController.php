@@ -9,20 +9,25 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Throwable;
 
 class BookController extends Controller
 {
-    // Menampilkan daftar buku, dengan fitur pencarian judul/penulis
+    // Menampilkan daftar buku, dengan pencarian sesuai data yang tampil di koleksi
     public function index(Request $request): View
     {
-        $search = $request->query('search');
+        $search = $request->string('search')->trim()->substr(0, 120)->toString();
         $categoryId = $request->query('category');
         $status = $request->query('status');
 
         $books = Book::with('category')
-            ->when($search, function ($query, $search) {
-                $query->where('title', 'like', "%{$search}%")
-                    ->orWhere('author', 'like', "%{$search}%");
+            ->when(filled($search), function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('author', 'like', "%{$search}%")
+                        ->orWhere('book_code', 'like', "%{$search}%")
+                        ->orWhereHas('category', fn ($category) => $category->where('name', 'like', "%{$search}%"));
+                });
             })
             ->when($categoryId, function ($query, $categoryId) {
                 $query->where('category_id', $categoryId);
@@ -48,7 +53,7 @@ class BookController extends Controller
                 'category' => $book->category->name,
                 'stock' => $book->stock,
                 'available' => $book->stock,
-                'cover' => $book->cover_image ? asset('storage/'.$book->cover_image) : null,
+                'cover' => $book->coverUrl(),
             ];
         });
 
@@ -95,17 +100,30 @@ class BookController extends Controller
     public function update(BookRequest $request, Book $book): RedirectResponse
     {
         $data = $request->validated();
+        $previousCover = $book->cover_image;
+        $newCover = null;
 
         if ($request->hasFile('cover_image')) {
-            // Hapus cover lama biar file gak numpuk sia-sia di storage
-            if ($book->cover_image) {
-                Storage::disk('public')->delete($book->cover_image);
-            }
-
-            $data['cover_image'] = $request->file('cover_image')->store('books', 'public');
+            // Simpan cover baru terlebih dahulu. Cover lama baru dihapus
+            // setelah update database berhasil agar kegagalan upload/update
+            // tidak membuat buku kehilangan cover yang masih valid.
+            $newCover = $request->file('cover_image')->store('books', 'public');
+            $data['cover_image'] = $newCover;
         }
 
-        $book->update($data);
+        try {
+            $book->update($data);
+        } catch (Throwable $exception) {
+            if ($newCover) {
+                Storage::disk('public')->delete($newCover);
+            }
+
+            throw $exception;
+        }
+
+        if ($newCover && $previousCover && $previousCover !== $newCover) {
+            Storage::disk('public')->delete($previousCover);
+        }
 
         return redirect()->route('books.index')->with('success', 'Buku berhasil diperbarui.');
     }

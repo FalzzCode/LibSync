@@ -5,6 +5,51 @@ iconify-icon.solar-icon {
     vertical-align: -.2em;
     color: currentColor;
 }
+[data-solar-icon] { line-height: 1; }
 .sidebar__link > span .solar-icon,
 .mobile-tabbar span .solar-icon { width: 1.3em; height: 1.3em; vertical-align: middle; }
 .icon-button .solar-icon { width: 1.05em; height: 1.05em; vertical-align: middle; }
+.btn .solar-icon,
+.text-link .solar-icon,
+.text-action .solar-icon { width: 1em; height: 1em; vertical-align: -.15em; }
+
+/* Search controls use the same Solar icon treatment as the rest of the UI. */
+.search-field input[type="search"],
+.student-catalog-search input[type="search"] {
+    -webkit-appearance: textfield;
+    appearance: textfield;
+    color: var(--ink);
+    caret-color: var(--forest);
+}
+
+.search-field input[type="search"]::-webkit-search-cancel-button,
+.student-catalog-search input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
+
+.search-field__clear {
+    display: grid;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #66877e;
+    line-height: 1;
+    transition: background-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+.search-field__clear:hover {
+    background: #e8f1ed;
+    color: var(--forest);
+}
+
+.search-field__clear:active { transform: scale(.94); }
+.search-field__clear .solar-icon { width: 18px; height: 18px; }
+.search-field__clear:focus-visible { outline: 3px solid #89b6a7; outline-offset: 2px; }
+.student-catalog-search__clear.search-field__clear { text-decoration: none; }

@@ -16,13 +16,7 @@
     </div>
 
     <article class="detail-card">
-        <div class="detail-card__cover">
-            @if ($book->cover_image)
-                <img src="{{ asset('storage/' . $book->cover_image) }}" alt="Cover {{ $book->title }}">
-            @else
-                <span>Lib<br>Sync</span>
-            @endif
-        </div>
+        <x-book-cover :book="$book" size="detail" class="detail-card__cover" loading="eager" />
         <div class="detail-card__content">
             <div class="detail-card__status">
                 <span class="badge {{ $book->stock > 0 && ! $book->archived_at ? 'badge--success' : 'badge--danger' }}">

@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookCopyController;
+use App\Http\Controllers\BookCoverController;
 use App\Http\Controllers\BorrowingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -43,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::get('/profile/photo/{user}', [ProfileController::class, 'photo'])->name('profile.photo');
+    Route::get('/media/books/{book}/cover', [BookCoverController::class, 'show'])->name('books.cover');
     Route::get('developer', [DeveloperPanelController::class, 'index'])->name('developer.index');
     Route::post('developer/seed-demo', [DeveloperPanelController::class, 'seedDemo'])->name('developer.seed-demo');
     Route::post('developer/check-overdues', [DeveloperPanelController::class, 'runOverdueCheck'])->name('developer.check-overdues');

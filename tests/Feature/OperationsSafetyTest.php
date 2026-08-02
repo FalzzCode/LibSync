@@ -72,6 +72,27 @@ class OperationsSafetyTest extends TestCase
         $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id]);
     }
 
+    public function test_anggota_dengan_antrean_buku_tidak_dapat_dihapus(): void
+    {
+        $staff = $this->staff();
+        $member = Member::create(['name' => 'Anggota Antrean', 'phone' => '08123456763']);
+        $book = $this->book();
+        $reservation = BookReservation::create([
+            'book_id' => $book->id,
+            'member_id' => $member->id,
+            'status' => 'waiting',
+            'queue_position' => 1,
+        ]);
+
+        $this->actingAs($staff)->from(route('members.index'))
+            ->delete(route('members.destroy', $member))
+            ->assertRedirect(route('members.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('members', ['id' => $member->id]);
+        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id]);
+    }
+
     public function test_kode_eksemplar_harus_unik(): void
     {
         $staff = $this->staff();
@@ -90,5 +111,26 @@ class OperationsSafetyTest extends TestCase
         ])->assertRedirect(route('book-copies.index'))->assertSessionHasErrors('inventory_code');
 
         $this->assertDatabaseCount('book_copies', 1);
+    }
+
+    public function test_kode_koleksi_buku_tidak_boleh_berulang(): void
+    {
+        $staff = $this->staff();
+        $firstBook = $this->book();
+        $firstBook->update(['book_code' => 'BK-001']);
+        $secondBook = Book::create([
+            'title' => 'Buku Kedua',
+            'author' => 'Penulis Kedua',
+            'stock' => 1,
+            'category_id' => $firstBook->category_id,
+        ]);
+
+        $this->actingAs($staff)->from(route('books.edit', $secondBook))->put(route('books.update', $secondBook), [
+            'title' => $secondBook->title,
+            'author' => $secondBook->author,
+            'book_code' => 'BK-001',
+            'category_id' => $secondBook->category_id,
+            'stock' => 1,
+        ])->assertRedirect(route('books.edit', $secondBook))->assertSessionHasErrors('book_code');
     }
 }

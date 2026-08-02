@@ -1,0 +1,193 @@
+/* A book-cover stage that fills the detail card instead of leaving letterbox gaps. */
+.borrowing-detail {
+    grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.borrowing-detail__cover {
+    position: relative;
+    display: block;
+    align-self: stretch;
+    min-height: 430px;
+    height: 100%;
+    overflow: hidden;
+    isolation: isolate;
+    background: #173d3a;
+}
+
+.borrowing-detail__cover img {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    transition: transform .6s cubic-bezier(.2,.7,.2,1);
+}
+
+.borrowing-detail:hover .borrowing-detail__cover img {
+    transform: scale(1.035);
+}
+
+.borrowing-detail__cover::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(11, 37, 33, .04) 24%, rgba(11, 37, 33, .1) 45%, rgba(8, 29, 26, .9) 100%);
+    pointer-events: none;
+}
+
+.borrowing-detail__cover::after {
+    content: "";
+    position: absolute;
+    top: 22px;
+    right: 16px;
+    bottom: 22px;
+    width: 2px;
+    border-radius: 99px;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,.7), transparent);
+    opacity: .55;
+    pointer-events: none;
+}
+
+.borrowing-detail__cover-sheen {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(118deg, transparent 28%, rgba(255,255,255,.14) 47%, transparent 58%);
+    transform: translateX(-110%);
+    transition: transform .8s ease;
+    pointer-events: none;
+}
+
+.borrowing-detail:hover .borrowing-detail__cover-sheen {
+    transform: translateX(110%);
+}
+
+.borrowing-detail__cover-info {
+    position: absolute;
+    right: 28px;
+    bottom: 25px;
+    left: 22px;
+    z-index: 1;
+    display: grid;
+    gap: 4px;
+    color: #fff;
+}
+
+.borrowing-detail__cover-info span {
+    color: #d8b878;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.borrowing-detail__cover-info strong {
+    max-width: 19ch;
+    font: 600 clamp(20px, 2vw, 29px)/1.05 var(--serif);
+    letter-spacing: -.025em;
+    text-wrap: balance;
+}
+
+.borrowing-detail__cover-info small {
+    color: rgba(255,255,255,.78);
+    font-size: 11px;
+}
+
+.borrowing-detail__cover-placeholder {
+    display: grid;
+    min-height: 430px;
+    height: 100%;
+    align-content: center;
+    justify-items: center;
+    gap: 9px;
+    padding: 24px;
+    color: #e4f1eb;
+    text-align: center;
+    background: radial-gradient(circle at 25% 15%, rgba(134,190,165,.3), transparent 38%), linear-gradient(150deg, #214e45, #102e2a);
+}
+
+.borrowing-detail__cover-placeholder span {
+    display: grid;
+    width: 62px;
+    height: 62px;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 19px;
+    color: #e2bb77;
+    font-weight: 800;
+    letter-spacing: .06em;
+}
+
+.borrowing-detail__cover-placeholder strong {
+    max-width: 16ch;
+    font: 600 22px/1.1 var(--serif);
+}
+
+.borrowing-detail__cover-placeholder small {
+    color: rgba(255,255,255,.65);
+    font-size: 11px;
+}
+
+@media (max-width: 760px) {
+    .borrowing-detail {
+        grid-template-columns: 1fr;
+    }
+
+    .borrowing-detail__cover,
+    .borrowing-detail__cover-placeholder {
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 3 / 4;
+    }
+
+    .borrowing-detail__cover-info {
+        right: 22px;
+        bottom: 19px;
+        left: 18px;
+    }
+
+    .borrowing-detail__cover-info strong {
+        max-width: 16ch;
+        font-size: 23px;
+    }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+    .borrowing-detail {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .borrowing-detail__cover,
+    .borrowing-detail__cover-placeholder {
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 3 / 4;
+    }
+}
+
+/* Account for the fixed navigation rail: the usable content width can be
+   tablet-sized even while the viewport is technically desktop-sized. */
+@media (min-width: 1101px) and (max-width: 1280px) {
+    .borrowing-detail {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .borrowing-detail__cover,
+    .borrowing-detail__cover-placeholder {
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 3 / 4;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .borrowing-detail__cover img,
+    .borrowing-detail__cover-sheen {
+        transition: none;
+    }
+}

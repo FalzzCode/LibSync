@@ -8,17 +8,30 @@ use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\StudentPortalActivation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class MemberController extends Controller
 {
     // Menampilkan daftar semua anggota
-    public function index(): View
+    public function index(Request $request): View
     {
-        $members = Member::with('user:id,name,email,profile_photo_path,avatar_url,updated_at')->latest()->get();
+        $search = $request->string('search')->trim()->toString();
+        $members = Member::with('user:id,name,email,profile_photo_path,avatar_url,updated_at')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('class', 'like', "%{$search}%")
+                        ->orWhere('major', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->get();
 
-        return view('members.index', compact('members'));
+        return view('members.index', compact('members', 'search'));
     }
 
     // Menampilkan form tambah anggota
@@ -108,6 +121,9 @@ class MemberController extends Controller
     {
         if ($member->borrowings()->exists()) {
             return back()->with('error', 'Anggota tidak dapat dihapus karena sudah memiliki riwayat transaksi.');
+        }
+        if ($member->reservations()->exists()) {
+            return back()->with('error', 'Anggota tidak dapat dihapus karena masih memiliki riwayat atau antrean buku.');
         }
 
         DB::transaction(function () use ($member) {

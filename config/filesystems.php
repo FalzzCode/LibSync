@@ -1,5 +1,11 @@
 <?php
 
+$assetUrl = env('ASSET_URL') ?: env('APP_URL', 'http://localhost');
+
+if (is_string($assetUrl) && str_contains($assetUrl, '${APP_URL}')) {
+    $assetUrl = env('APP_URL', 'http://localhost');
+}
+
 return [
 
     /*
@@ -41,7 +47,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => rtrim((string) $assetUrl, '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

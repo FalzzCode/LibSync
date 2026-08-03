@@ -34,6 +34,10 @@ Login Google baru membuat profil berperan `student` secara otomatis, tanpa NIS a
 - Isi `APP_URL` dengan domain HTTPS sekolah. `ASSET_URL` dan `GOOGLE_REDIRECT_URI` akan mengikuti `APP_URL` jika tidak diisi secara eksplisit.
 - Tambahkan `https://domain-sekolah/auth/google/callback` ke Authorized redirect URI Google.
 - Jalankan `php artisan optimize` setelah konfigurasi final.
+- Jalankan `php artisan library:deploy-check` untuk memeriksa env, database,
+  session, permission folder, dan asset build sebelum DNS diarahkan.
+- Jalankan `php artisan library:diagnose-oauth --verify-client` setelah server
+  boleh menghubungi Google.
 - Jadwalkan `php artisan schedule:run` setiap menit melalui cron/Task Scheduler, atau jalankan `php artisan schedule:work` sebagai service. Tanpa ini, peringatan keterlambatan dan batas waktu reservasi tidak diproses otomatis.
 - Gunakan database MySQL terkelola/ter-backup dan simpan snapshot admin di lokasi aman.
 

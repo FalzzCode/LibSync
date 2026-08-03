@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityLog;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\StudentPortalActivation;
@@ -32,6 +33,9 @@ class StudentActivationTest extends TestCase
         $this->assertNotNull($member->activation_code_hash);
         $this->assertTrue($member->activation_expires_at->isFuture());
         $this->assertTrue(Hash::check($response->getSession()->get('activation_code'), $member->activation_code_hash));
+
+        $activity = ActivityLog::query()->latest('id')->firstOrFail();
+        $this->assertArrayNotHasKey('activation_code_hash', $activity->after ?? []);
     }
 
     public function test_student_can_start_google_activation_with_valid_nis_and_code(): void

@@ -12,6 +12,19 @@
     background: var(--canvas);
 }
 
+/* Grid/flex children must be allowed to shrink on narrow screens. Without
+   this guard, the editorial copy can keep its desktop intrinsic width and
+   push the authentication panel past the viewport. */
+.login,
+.login__brand,
+.login__brand-inner,
+.login__form-wrapper,
+.login__form {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 .login__brand {
     display: flex;
     align-items: center;
@@ -27,7 +40,7 @@
 .login__brand-head strong { display: block; font: 700 22px/1 var(--serif); letter-spacing: -.04em; }
 .login__brand-head small { display: block; margin-top: 5px; color: #a9ccc0; font-size: 11px; letter-spacing: .02em; }
 .login__brand-kicker { margin-top: clamp(42px, 9vh, 94px); color: #a8d4c4; }
-.login__brand h1 { max-width: 680px; margin: 10px 0 18px; font: 600 clamp(42px, 4.4vw, 68px)/1.02 var(--serif); letter-spacing: -.055em; }
+.login__brand h1 { width: 100%; max-width: 680px; margin: 10px 0 18px; font: 600 clamp(42px, 4.4vw, 68px)/1.02 var(--serif); letter-spacing: -.055em; overflow-wrap: anywhere; }
 .login__brand > div > p:not(.eyebrow) { max-width: 510px; margin: 0; color: #d0e4dc; font-size: 15px; line-height: 1.65; }
 
 .login__highlights { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 31px; padding-top: 19px; border-top: 1px solid rgb(255 255 255 / 20%); }
@@ -59,9 +72,7 @@
 .login__divider::before, .login__divider::after { content: ''; height: 1px; flex: 1; background: var(--line); }
 
 .login__local-fallback { margin-top: 20px; padding: 18px; border: 1px solid #c9ddd4; border-radius: 14px; background: #fff; box-shadow: 0 8px 22px rgb(18 62 55 / 5%); }
-.login__local-heading { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; }
-.login__local-icon { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border-radius: 9px; background: #e8f2ed; color: #287261; }
-.login__local-icon iconify-icon { width: 17px; height: 17px; }
+.login__local-heading { margin-bottom: 15px; }
 .login__local-heading strong { display: block; font-size: 13px; }
 .login__local-heading p { margin: 2px 0 0; color: #6a7d77; font-size: 11px; }
 .login__local-fallback .form-group { margin-top: 13px; }
@@ -77,7 +88,6 @@
 :root[data-theme="dark"] .login__google-note { border-color: #426b5d; background: #1b3b32; color: #c0d7ce; }
 :root[data-theme="dark"] .login__google-note strong { color: #effaf5; }
 :root[data-theme="dark"] .login__local-fallback { border-color: #426b5d; background: #1a2d27; }
-:root[data-theme="dark"] .login__local-icon { background: #29483f; color: #bde3d3; }
 :root[data-theme="dark"] .login__local-heading p { color: #b3c4bd; }
 :root[data-theme="dark"] .login__local-fallback .form-group input { border-color: #46685e; background: #152821; color: #edf5f1; }
 :root[data-theme="dark"] .login__local-fallback .check-field { color: #c0d0ca; }

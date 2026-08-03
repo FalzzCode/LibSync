@@ -3,12 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\Book;
+use App\Models\BookCopy;
 use App\Models\BookReservation;
 use App\Models\Category;
 use App\Models\Fine;
 use App\Models\Member;
 use App\Models\User;
+use App\Models\Warning;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class OperationsSafetyTest extends TestCase
@@ -72,6 +76,26 @@ class OperationsSafetyTest extends TestCase
         $this->assertDatabaseHas('reservasi_buku', ['id' => $reservation->id]);
     }
 
+    public function test_buku_dengan_salinan_fisik_tidak_dapat_dihapus(): void
+    {
+        $staff = $this->staff();
+        $book = $this->book();
+        $copy = BookCopy::create([
+            'book_id' => $book->id,
+            'inventory_code' => 'INV-HOLD-001',
+            'condition' => 'good',
+            'status' => 'available',
+        ]);
+
+        $this->actingAs($staff)->from(route('books.index'))
+            ->delete(route('books.destroy', $book))
+            ->assertRedirect(route('books.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('buku', ['id' => $book->id]);
+        $this->assertDatabaseHas('salinan_buku', ['id' => $copy->id]);
+    }
+
     public function test_anggota_dengan_antrean_buku_tidak_dapat_dihapus(): void
     {
         $staff = $this->staff();
@@ -91,6 +115,21 @@ class OperationsSafetyTest extends TestCase
 
         $this->assertDatabaseHas('anggota', ['id' => $member->id]);
         $this->assertDatabaseHas('reservasi_buku', ['id' => $reservation->id]);
+    }
+
+    public function test_anggota_dengan_catatan_denda_tidak_dapat_dihapus(): void
+    {
+        $staff = $this->staff();
+        $member = Member::create(['name' => 'Anggota Denda Hapus', 'phone' => '08123456762']);
+        $fine = Fine::create(['member_id' => $member->id, 'amount' => 5000, 'type' => 'late', 'status' => 'unpaid']);
+
+        $this->actingAs($staff)->from(route('members.index'))
+            ->delete(route('members.destroy', $member))
+            ->assertRedirect(route('members.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('anggota', ['id' => $member->id]);
+        $this->assertDatabaseHas('denda', ['id' => $fine->id]);
     }
 
     public function test_kode_eksemplar_harus_unik(): void
@@ -113,6 +152,24 @@ class OperationsSafetyTest extends TestCase
         $this->assertDatabaseCount('salinan_buku', 1);
     }
 
+    public function test_eksemplar_baru_tidak_dapat_ditambahkan_ke_buku_arsip(): void
+    {
+        $staff = $this->staff();
+        $book = $this->book();
+        $book->update(['archived_at' => now()]);
+
+        $this->actingAs($staff)->from(route('book-copies.index'))
+            ->post(route('book-copies.store'), [
+                'book_id' => $book->id,
+                'inventory_code' => 'INV-ARSIP-001',
+                'condition' => 'good',
+            ])
+            ->assertRedirect(route('book-copies.index'))
+            ->assertSessionHasErrors('book_id');
+
+        $this->assertDatabaseCount('salinan_buku', 0);
+    }
+
     public function test_kode_koleksi_buku_tidak_boleh_berulang(): void
     {
         $staff = $this->staff();
@@ -132,5 +189,88 @@ class OperationsSafetyTest extends TestCase
             'category_id' => $secondBook->category_id,
             'stock' => 1,
         ])->assertRedirect(route('books.edit', $secondBook))->assertSessionHasErrors('book_code');
+    }
+
+    public function test_database_menolak_kode_koleksi_buku_duplikat(): void
+    {
+        $firstBook = $this->book();
+        $firstBook->update(['book_code' => 'BK-DB-001']);
+
+        $this->expectException(QueryException::class);
+        Book::create([
+            'title' => 'Buku Duplikat Database',
+            'author' => 'Penulis',
+            'stock' => 1,
+            'book_code' => 'BK-DB-001',
+            'category_id' => $firstBook->category_id,
+        ]);
+    }
+
+    public function test_database_menolak_email_anggota_duplikat(): void
+    {
+        Member::create([
+            'name' => 'Anggota Pertama',
+            'email' => 'anggota@example.test',
+            'phone' => '08123456760',
+        ]);
+
+        $this->expectException(QueryException::class);
+        Member::create([
+            'name' => 'Anggota Kedua',
+            'email' => 'anggota@example.test',
+            'phone' => '08123456761',
+        ]);
+    }
+
+    public function test_database_menolak_nama_kategori_duplikat(): void
+    {
+        Category::create(['name' => 'Kategori Tunggal']);
+
+        $this->expectException(QueryException::class);
+        Category::create(['name' => 'Kategori Tunggal']);
+    }
+
+    public function test_resolve_peringatan_idempoten_saat_tombol_diklik_dua_kali(): void
+    {
+        $staff = $this->staff();
+        $warning = Warning::create([
+            'type' => 'manual',
+            'level' => 'warning',
+            'title' => 'Peringatan uji',
+            'message' => 'Pesan uji.',
+        ]);
+
+        $this->actingAs($staff)->post(route('warnings.resolve', $warning), [
+            'resolution_note' => 'Sudah ditangani.',
+        ])->assertRedirect();
+
+        $this->actingAs($staff)->post(route('warnings.resolve', $warning), [
+            'resolution_note' => 'Catatan kedua tidak boleh menimpa.',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('peringatan', [
+            'id' => $warning->id,
+            'resolution_note' => 'Sudah ditangani.',
+        ]);
+        $this->assertDatabaseCount('log_aktivitas', 1);
+    }
+
+    public function test_cover_buku_menolak_svg_aktif(): void
+    {
+        $staff = $this->staff();
+        $category = Category::create(['name' => 'Kategori Cover Aman']);
+
+        $this->actingAs($staff)->from(route('books.create'))
+            ->post(route('books.store'), [
+                'title' => 'Buku Tanpa SVG',
+                'author' => 'Penulis',
+                'category_id' => $category->id,
+                'stock' => 1,
+                'cover_image' => UploadedFile::fake()->createWithContent('cover.svg', '<svg><script>alert(1)</script></svg>'),
+            ])
+            ->assertRedirect(route('books.create'))
+            ->assertSessionHasErrors('cover_image');
+
+        $this->assertDatabaseCount('buku', 0);
     }
 }

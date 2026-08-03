@@ -67,7 +67,7 @@ class DeveloperPanelController extends Controller
         $this->guard();
         $this->createTestAccounts();
 
-        return back()->with('success', 'Akun uji Admin, Staff, dan Student sudah siap digunakan.');
+        return back()->with('success', 'Akun uji Admin, Petugas, dan Siswa sudah siap digunakan.');
     }
 
     public function switchRole(Request $request): RedirectResponse
@@ -77,7 +77,7 @@ class DeveloperPanelController extends Controller
         $user = User::query()->where('email', 'developer.'.$role.'@libsync.test')->first();
 
         if (! $user) {
-            return back()->with('error', 'Siapkan akun role uji terlebih dahulu.');
+            return back()->with('error', 'Siapkan akun peran uji terlebih dahulu.');
         }
 
         if (! $request->session()->has('developer_original_user_id')) {
@@ -86,8 +86,10 @@ class DeveloperPanelController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        $roleLabel = ['admin' => 'Admin', 'staff' => 'Petugas', 'student' => 'Siswa'][$role];
+
         return redirect()->route($role === 'student' ? 'student.dashboard' : 'dashboard')
-            ->with('success', 'Mode uji aktif: '.ucfirst($role).'.');
+            ->with('success', 'Mode uji aktif: '.$roleLabel.'.');
     }
 
     public function restoreOriginalUser(Request $request): RedirectResponse
@@ -109,7 +111,7 @@ class DeveloperPanelController extends Controller
     {
         $accounts = [
             'admin' => ['name' => 'Admin Uji', 'email' => 'developer.admin@libsync.test'],
-            'staff' => ['name' => 'Staff Uji', 'email' => 'developer.staff@libsync.test'],
+            'staff' => ['name' => 'Petugas Uji', 'email' => 'developer.staff@libsync.test'],
             'student' => ['name' => 'Siswa Uji', 'email' => 'developer.student@libsync.test'],
         ];
 

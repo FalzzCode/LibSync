@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\BookReservation;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -13,8 +14,9 @@ class StudentReservationController extends Controller
     {
         $member = auth()->user()->member;
         abort_unless($member, 403, 'Akun belum terhubung ke data anggota.');
+        $createdReservation = null;
 
-        $outcome = DB::transaction(function () use ($book, $member) {
+        $outcome = DB::transaction(function () use ($book, $member, &$createdReservation) {
             $book = Book::lockForUpdate()->findOrFail($book->id);
 
             if ($book->archived_at) {
@@ -29,7 +31,7 @@ class StudentReservationController extends Controller
                 return 'exists';
             }
             $position = (int) BookReservation::where('book_id', $book->id)->whereIn('status', ['waiting', 'ready'])->max('queue_position') + 1;
-            BookReservation::create(['book_id' => $book->id, 'member_id' => $member->id, 'status' => 'waiting', 'queue_position' => $position]);
+            $createdReservation = BookReservation::create(['book_id' => $book->id, 'member_id' => $member->id, 'status' => 'waiting', 'queue_position' => $position]);
 
             return 'created';
         });
@@ -43,6 +45,8 @@ class StudentReservationController extends Controller
         if ($outcome === 'exists') {
             return back()->with('error', 'Buku ini sudah ada dalam daftar tunggu Anda.');
         }
+
+        ActivityLogger::write('create', 'reservation', $createdReservation, null, $createdReservation?->toArray());
 
         return back()->with('success', 'Buku masuk daftar tunggu. Kami akan memberi tahu saat tersedia.');
     }

@@ -50,7 +50,7 @@ class AuthController extends Controller
         // Regenerate session untuk mencegah session fixation
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        return $this->redirectAfterLogin($request, $request->user());
     }
 
     public function redirectToGoogle(Request $request): RedirectResponse
@@ -124,7 +124,7 @@ class AuthController extends Controller
             Auth::login($user, true);
             $request->session()->regenerate();
 
-            return redirect()->intended($user->role === 'student' ? route('student.dashboard') : route('dashboard'));
+            return $this->redirectAfterLogin($request, $user);
         } catch (\Throwable $exception) {
             $this->logGoogleFailure('callback', $exception, $request);
 
@@ -233,10 +233,14 @@ class AuthController extends Controller
                 return $user->fresh();
             }
 
-            $member = Member::query()
+            $member = Member::withTrashed()
                 ->whereRaw('LOWER(email) = ?', [$googleEmail])
                 ->lockForUpdate()
                 ->first();
+
+            if ($member?->trashed()) {
+                throw new \RuntimeException('google_member_archived');
+            }
 
             if ($member?->user_id) {
                 $linkedUser = User::query()->lockForUpdate()->find($member->user_id);
@@ -291,13 +295,21 @@ class AuthController extends Controller
 
     private function ensureStudentMember(User $user, string $googleEmail, mixed $googleUser): Member
     {
-        $member = Member::query()->where('user_id', $user->id)->lockForUpdate()->first();
+        $member = Member::withTrashed()->where('user_id', $user->id)->lockForUpdate()->first();
+
+        if ($member?->trashed()) {
+            throw new \RuntimeException('google_member_archived');
+        }
 
         if (! $member) {
-            $member = Member::query()
+            $member = Member::withTrashed()
                 ->whereRaw('LOWER(email) = ?', [$googleEmail])
                 ->lockForUpdate()
                 ->first();
+
+            if ($member?->trashed()) {
+                throw new \RuntimeException('google_member_archived');
+            }
 
             if ($member?->user_id && $member->user_id !== $user->id) {
                 throw new \RuntimeException('google_email_conflict');
@@ -383,6 +395,25 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 
+    /**
+     * Return users to a page that matches their role. A stale intended URL
+     * can point at another role's area (for example, a student page left in
+     * the session before a staff login), which would otherwise create a
+     * confusing 403 immediately after a successful login.
+     */
+    private function redirectAfterLogin(Request $request, User $user): RedirectResponse
+    {
+        $fallback = $user->role === 'student' ? 'student.dashboard' : 'dashboard';
+        $intended = $request->session()->pull('url.intended');
+        $path = is_string($intended) ? (string) parse_url($intended, PHP_URL_PATH) : '';
+
+        if ($user->role === 'student' && Str::startsWith($path, '/student/')) {
+            return redirect()->to($intended);
+        }
+
+        return redirect()->route($fallback);
+    }
+
     private function googleIsConfigured(): bool
     {
         return filled(config('services.google.client_id'))
@@ -422,6 +453,10 @@ class AuthController extends Controller
 
         if ($message === 'google_identity_conflict' || $message === 'google_email_conflict') {
             return 'Akun Google ini sudah terhubung ke profil LibSync lain. Hubungi petugas jika perlu menggabungkan data.';
+        }
+
+        if ($message === 'google_member_archived') {
+            return 'Data anggota untuk email ini sudah diarsipkan. Hubungi petugas sebelum login kembali.';
         }
 
         if ($message === 'google_registration_disabled') {

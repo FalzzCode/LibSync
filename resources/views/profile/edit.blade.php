@@ -4,6 +4,7 @@
 @section('eyebrow', 'Pengaturan profil')
 
 @section('content')
+@php($roleLabels = ['admin' => 'Admin', 'staff' => 'Petugas', 'student' => 'Siswa', 'developer' => 'Pengembang'])
 <section class="page profile-page">
     <div class="page-header">
         <div>
@@ -26,7 +27,7 @@
             </div>
             <h2>{{ $user->name }}</h2>
             <p>{{ $user->email }}</p>
-            <span class="role-badge">{{ ucfirst($user->role) }}</span>
+            <span class="role-badge">{{ $roleLabels[$user->role] ?? ucfirst($user->role) }}</span>
             @if ($user->google_id)<small class="profile-summary__note">Akun Google terhubung</small>@endif
         </aside>
 

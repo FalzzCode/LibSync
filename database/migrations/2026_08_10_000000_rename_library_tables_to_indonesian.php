@@ -30,13 +30,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::withoutForeignKeyConstraints(function (): void {
+            $this->assertNoRenameCollisions(self::TABLES);
+
             foreach (self::TABLES as $from => $to) {
                 if (! Schema::hasTable($from)) {
                     continue;
-                }
-
-                if (Schema::hasTable($to)) {
-                    throw new RuntimeException("Tidak dapat mengganti tabel {$from}: tabel {$to} sudah ada.");
                 }
 
                 Schema::rename($from, $to);
@@ -47,17 +45,30 @@ return new class extends Migration
     public function down(): void
     {
         Schema::withoutForeignKeyConstraints(function (): void {
+            $this->assertNoRenameCollisions(array_flip(self::TABLES));
+
             foreach (array_reverse(self::TABLES, true) as $from => $to) {
                 if (! Schema::hasTable($to)) {
                     continue;
                 }
 
-                if (Schema::hasTable($from)) {
-                    throw new RuntimeException("Tidak dapat mengembalikan tabel {$to}: tabel {$from} sudah ada.");
-                }
-
                 Schema::rename($to, $from);
             }
         });
+    }
+
+    /**
+     * Check the complete plan before the first rename so a collision cannot
+     * leave the database in a partially renamed state.
+     *
+     * @param  array<string, string>  $renames
+     */
+    private function assertNoRenameCollisions(array $renames): void
+    {
+        foreach ($renames as $from => $to) {
+            if (Schema::hasTable($from) && Schema::hasTable($to)) {
+                throw new RuntimeException("Tidak dapat mengganti tabel {$from}: tabel {$to} sudah ada.");
+            }
+        }
     }
 };

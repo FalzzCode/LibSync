@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -44,7 +45,7 @@ class UserController extends Controller
         $user = User::create($request->validated());
         ActivityLogger::write('create', 'user', $user, null, $user->only(['id', 'name', 'email', 'role']));
 
-        return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
+        return redirect()->route('users.index')->with('success', 'Pengguna berhasil ditambahkan.');
     }
 
     // Menampilkan form edit user
@@ -63,21 +64,37 @@ class UserController extends Controller
         abort_if($user->role === 'student', 404);
 
         $data = $request->validated();
+        $updateError = null;
 
-        if ($user->role === 'admin' && $data['role'] !== 'admin' && User::where('role', 'admin')->count() <= 1) {
-            return back()->withInput()->with('error', 'Admin terakhir tidak dapat diubah perannya. Tambahkan admin lain terlebih dahulu.');
+        DB::transaction(function () use ($data, $user, &$updateError): void {
+            // Lock all admin rows in a deterministic order before changing a
+            // role. Two admins cannot concurrently demote/delete each other
+            // and accidentally leave the system without an administrator.
+            $admins = User::query()->where('role', 'admin')->orderBy('id')->lockForUpdate()->get(['id']);
+            $user = User::query()->lockForUpdate()->findOrFail($user->id);
+
+            if ($user->role === 'admin' && $data['role'] !== 'admin' && $admins->count() <= 1) {
+                $updateError = 'Admin terakhir tidak dapat diubah perannya. Tambahkan admin lain terlebih dahulu.';
+
+                return;
+            }
+
+            // Password dikosongkan di form = tidak diganti.
+            $attributes = $data;
+            if (empty($attributes['password'])) {
+                unset($attributes['password']);
+            }
+
+            $before = $user->only(['id', 'name', 'email', 'role']);
+            $user->update($attributes);
+            ActivityLogger::write('update', 'user', $user, $before, $user->fresh()->only(['id', 'name', 'email', 'role']));
+        });
+
+        if ($updateError) {
+            return back()->withInput()->with('error', $updateError);
         }
 
-        // Password dikosongkan di form = tidak diganti
-        if (empty($data['password'])) {
-            unset($data['password']);
-        }
-
-        $before = $user->only(['id', 'name', 'email', 'role']);
-        $user->update($data);
-        ActivityLogger::write('update', 'user', $user, $before, $user->fresh()->only(['id', 'name', 'email', 'role']));
-
-        return redirect()->route('users.index')->with('success', 'User berhasil diperbarui.');
+        return redirect()->route('users.index')->with('success', 'Pengguna berhasil diperbarui.');
     }
 
     // Menghapus user
@@ -93,15 +110,32 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'Anda tidak bisa menghapus akun Anda sendiri.');
         }
 
-        if ($user->borrowings()->exists()) {
-            return redirect()->route('users.index')->with('error', 'User tidak dapat dihapus karena tercatat pada riwayat transaksi.');
+        $deleteError = null;
+        DB::transaction(function () use ($user, &$deleteError): void {
+            $admins = User::query()->where('role', 'admin')->orderBy('id')->lockForUpdate()->get(['id']);
+            $user = User::query()->lockForUpdate()->findOrFail($user->id);
+
+            if ($user->role === 'admin' && $admins->count() <= 1) {
+                $deleteError = 'Admin terakhir tidak dapat dihapus. Tambahkan admin lain terlebih dahulu.';
+
+                return;
+            }
+            if ($user->borrowings()->lockForUpdate()->exists()) {
+                $deleteError = 'Pengguna tidak dapat dihapus karena tercatat pada riwayat transaksi.';
+
+                return;
+            }
+
+            $before = $user->only(['id', 'name', 'email', 'role']);
+            $user->delete();
+            ActivityLogger::write('delete', 'user', $user, $before, null);
+        });
+
+        if ($deleteError) {
+            return redirect()->route('users.index')->with('error', $deleteError);
         }
 
-        $before = $user->only(['id', 'name', 'email', 'role']);
-        $user->delete();
-        ActivityLogger::write('delete', 'user', $user, $before, null);
-
-        return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+        return redirect()->route('users.index')->with('success', 'Pengguna berhasil dihapus.');
     }
 
     private function ensureAdmin(): void

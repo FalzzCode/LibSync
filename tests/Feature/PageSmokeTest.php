@@ -47,6 +47,12 @@ class PageSmokeTest extends TestCase
         ] as $url) {
             $this->actingAs($admin)->get($url)->assertOk();
         }
+
+        $this->actingAs($admin)
+            ->get(route('imports.create'))
+            ->assertSee('Pilih file CSV')
+            ->assertSee('Belum ada file dipilih')
+            ->assertSee('fileHint');
     }
 
     public function test_staff_dan_siswa_hanya_melihat_halaman_sesuai_role(): void
@@ -74,9 +80,22 @@ class PageSmokeTest extends TestCase
             ->assertSee('transaction-stats--enhanced')
             ->assertSee('data-solar-icon="solar:book-2-bold"', false)
             ->assertSee('data-solar-icon="solar:wallet-money-bold"', false)
+            ->assertSee('data-solar-icon="solar:clock-circle-linear"', false)
+            ->assertSee('data-solar-icon="solar:refresh-circle-linear"', false)
             ->assertSee('Pinjaman aktif')
             ->assertSee('Belum ada aktivitas')
             ->assertSee('Grafik akan mulai terisi setelah peminjaman pertama dicatat.');
+    }
+
+    public function test_dashboard_user_kpi_hanya_menghitung_admin_dan_staff(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        User::factory()->create(['role' => 'staff']);
+        User::factory()->create(['role' => 'student']);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertViewHas('totalUsers', 2);
     }
 
     public function test_dashboard_chart_starts_from_the_first_transaction_day(): void

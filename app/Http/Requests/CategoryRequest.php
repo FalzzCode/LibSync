@@ -7,9 +7,14 @@ use Illuminate\Validation\Rule;
 
 class CategoryRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['name' => trim((string) $this->input('name'))]);
+    }
+
     public function authorize(): bool
     {
-        return true;
+        return in_array($this->user()?->role, ['admin', 'staff'], true);
     }
 
     public function rules(): array

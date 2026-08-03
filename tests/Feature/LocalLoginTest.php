@@ -48,6 +48,40 @@ class LocalLoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_local_login_normalizes_email_case_and_outer_spaces(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'staff@perpustakaan.test',
+            'password' => Hash::make('password123'),
+            'role' => 'staff',
+        ]);
+
+        $this->post(route('login.attempt'), [
+            'email' => '  STAFF@PERPUSTAKAAN.TEST  ',
+            'password' => 'password123',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_local_login_ignores_a_stale_intended_url_from_another_role(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'staff@perpustakaan.test',
+            'password' => Hash::make('password123'),
+            'role' => 'staff',
+        ]);
+
+        $this->get(route('student.catalog'))->assertRedirect(route('login'));
+
+        $this->post(route('login.attempt'), [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_invalid_local_credentials_return_a_clear_error(): void
     {
         User::factory()->create([

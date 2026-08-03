@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{{ asset('css/responsive.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dark-mode.css') }}?v=20260802-2">
     <link rel="stylesheet" href="{{ asset('css/branding.css') }}?v=20260808-2">
-    <link rel="stylesheet" href="{{ asset('css/google-auth.css') }}?v=20260808-2">
+    <link rel="stylesheet" href="{{ asset('css/google-auth.css') }}?v=20260808-3">
 </head>
 <body class="auth-body">
     <main class="login">

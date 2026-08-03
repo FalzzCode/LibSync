@@ -12,6 +12,21 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    private const BORROWING_STATUS_LABELS = [
+        'requested' => 'Menunggu persetujuan',
+        'return_requested' => 'Pengembalian diajukan',
+        'borrowed' => 'Sedang dipinjam',
+        'returned' => 'Dikembalikan',
+        'rejected' => 'Ditolak',
+    ];
+
+    private const PAYMENT_METHOD_LABELS = [
+        'cash' => 'Tunai',
+        'transfer' => 'Transfer',
+        'qris' => 'QRIS',
+        'waived' => 'Dibebaskan',
+    ];
+
     public function index(Request $request): View
     {
         [$from, $until] = $this->dateRange($request);
@@ -43,7 +58,7 @@ class ReportController extends Controller
                 ->latest('id')
                 ->chunk(200, function ($borrowings) use ($output) {
                     foreach ($borrowings as $borrowing) {
-                        $this->writeCsvRow($output, [$borrowing->id, $borrowing->member->name, $borrowing->book->title, $borrowing->status, $borrowing->borrowed_at?->format('Y-m-d'), $borrowing->due_date?->format('Y-m-d'), $borrowing->returned_at?->format('Y-m-d'), $borrowing->fine]);
+                        $this->writeCsvRow($output, [$borrowing->id, $borrowing->member->name, $borrowing->book->title, self::BORROWING_STATUS_LABELS[$borrowing->status] ?? $borrowing->status, $borrowing->borrowed_at?->format('Y-m-d'), $borrowing->due_date?->format('Y-m-d'), $borrowing->returned_at?->format('Y-m-d'), $borrowing->fine]);
                     }
                 });
             fclose($output);
@@ -81,19 +96,26 @@ class ReportController extends Controller
         return [$from, $until];
     }
 
-    public function finePaymentsCsv(): StreamedResponse
+    public function finePaymentsCsv(Request $request): StreamedResponse
     {
-        return response()->streamDownload(function () {
+        [$from, $until] = $this->dateRange($request, includeDefaults: false);
+        $filename = 'laporan-pembayaran-denda-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($from, $until) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
             $this->writeCsvRow($output, ['ID Pembayaran', 'Anggota', 'Nominal', 'Metode', 'Diterima oleh', 'Tanggal bayar', 'Catatan']);
-            FinePayment::with(['fine.member:id,name', 'receiver:id,name'])->latest('paid_at')->chunk(200, function ($payments) use ($output) {
-                foreach ($payments as $payment) {
-                    $this->writeCsvRow($output, [$payment->id, $payment->fine->member->name, $payment->amount, $payment->method, $payment->receiver?->name, $payment->paid_at?->format('Y-m-d H:i'), $payment->note]);
-                }
-            });
+            FinePayment::with(['fine.member:id,name', 'receiver:id,name'])
+                ->when($from, fn ($query) => $query->where('paid_at', '>=', $from))
+                ->when($until, fn ($query) => $query->where('paid_at', '<=', $until))
+                ->latest('paid_at')
+                ->chunk(200, function ($payments) use ($output) {
+                    foreach ($payments as $payment) {
+                        $this->writeCsvRow($output, [$payment->id, $payment->fine->member->name, $payment->amount, self::PAYMENT_METHOD_LABELS[$payment->method] ?? $payment->method, $payment->receiver?->name, $payment->paid_at?->format('Y-m-d H:i'), $payment->note]);
+                    }
+                });
             fclose($output);
-        }, 'laporan-pembayaran-denda-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /** @param resource $output */

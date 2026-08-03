@@ -7,9 +7,26 @@ use Illuminate\Validation\Rule;
 
 class MemberRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $fields = ['name', 'class', 'address', 'phone', 'nis', 'nisn', 'major', 'email', 'account_email'];
+        $normalized = [];
+
+        foreach ($fields as $field) {
+            if ($this->has($field)) {
+                $value = trim((string) $this->input($field));
+                $normalized[$field] = in_array($field, ['email', 'account_email'], true)
+                    ? strtolower($value)
+                    : $value;
+            }
+        }
+
+        $this->merge($normalized);
+    }
+
     public function authorize(): bool
     {
-        return true;
+        return in_array($this->user()?->role, ['admin', 'staff'], true);
     }
 
     public function rules(): array

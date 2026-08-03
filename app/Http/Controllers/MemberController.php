@@ -74,11 +74,16 @@ class MemberController extends Controller
     public function update(MemberRequest $request, Member $member): RedirectResponse
     {
         $data = $request->validated();
-        DB::transaction(function () use ($data, $member) {
+        $memberId = $member->id;
+        DB::transaction(function () use ($data, $memberId) {
+            $member = Member::query()->lockForUpdate()->findOrFail($memberId);
+            $linkedUser = $member->user_id
+                ? User::query()->lockForUpdate()->find($member->user_id)
+                : null;
             $before = $member->toArray();
-            if ($member->user && ($data['account_email'] ?? null || $data['account_password'] ?? null)) {
-                $member->user->update(array_filter(['email' => $data['account_email'] ?? null, 'password' => $data['account_password'] ?? null]));
-            } elseif (! $member->user && ($data['account_email'] ?? null)) {
+            if ($linkedUser && ($data['account_email'] ?? null || $data['account_password'] ?? null)) {
+                $linkedUser->update(array_filter(['email' => $data['account_email'] ?? null, 'password' => $data['account_password'] ?? null]));
+            } elseif (! $linkedUser && ($data['account_email'] ?? null)) {
                 $member->update(['user_id' => $this->createStudentAccount($data)?->id]);
             }
             $member->update(collect($data)->except(['account_email', 'account_password'])->all());
@@ -119,15 +124,34 @@ class MemberController extends Controller
     // Menghapus anggota
     public function destroy(Member $member): RedirectResponse
     {
-        if ($member->borrowings()->exists()) {
-            return back()->with('error', 'Anggota tidak dapat dihapus karena sudah memiliki riwayat transaksi.');
-        }
-        if ($member->reservations()->exists()) {
-            return back()->with('error', 'Anggota tidak dapat dihapus karena masih memiliki riwayat atau antrean buku.');
-        }
+        $deleteError = null;
+        $memberId = $member->id;
+        $userId = $member->user_id;
+        DB::transaction(function () use ($memberId, $userId, &$deleteError): void {
+            // User -> member is the same order used by profile and Google
+            // identity updates. Lock first, delete only after all relations
+            // have been checked.
+            $portalUser = $userId ? User::query()->lockForUpdate()->find($userId) : null;
+            $member = Member::query()->lockForUpdate()->findOrFail($memberId);
+            if ($member->user_id && (! $portalUser || $portalUser->id !== $member->user_id)) {
+                $portalUser = User::query()->lockForUpdate()->find($member->user_id);
+            }
+            if ($member->borrowings()->lockForUpdate()->exists()) {
+                $deleteError = 'Anggota tidak dapat dihapus karena sudah memiliki riwayat transaksi.';
 
-        DB::transaction(function () use ($member) {
-            $portalUser = $member->user;
+                return;
+            }
+            if ($member->reservations()->lockForUpdate()->exists()) {
+                $deleteError = 'Anggota tidak dapat dihapus karena masih memiliki riwayat atau antrean buku.';
+
+                return;
+            }
+            if ($member->fines()->lockForUpdate()->exists()) {
+                $deleteError = 'Anggota tidak dapat dihapus karena masih memiliki catatan denda.';
+
+                return;
+            }
+
             $before = $member->toArray();
             $member->delete();
 
@@ -137,6 +161,10 @@ class MemberController extends Controller
             }
             ActivityLogger::write('delete', 'member', $member, $before, null);
         });
+
+        if ($deleteError) {
+            return back()->with('error', $deleteError);
+        }
 
         return redirect()->route('members.index')->with('success', 'Anggota dan akun portalnya berhasil dihapus.');
     }

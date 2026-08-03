@@ -31,7 +31,7 @@
         <div class="table-card__meta"><span>{{ $categories->count() }} kategori {{ $search ? 'ditemukan' : 'terdaftar' }}</span></div>
         <div class="table-wrapper">
             <table class="data-table">
-                <thead><tr><th>Nama kategori</th><th>Dibuat</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+                <thead><tr><th scope="col">Nama kategori</th><th scope="col">Dibuat</th><th scope="col"><span class="sr-only">Aksi</span></th></tr></thead>
                 <tbody>
                     @forelse($categories as $category)
                         <tr>

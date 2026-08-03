@@ -1,0 +1,49 @@
+.error-body {
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 24px;
+    background: radial-gradient(circle at 12% 8%, #e6f2ec 0, transparent 26rem), var(--canvas);
+    color: var(--ink);
+}
+
+.error-page {
+    width: min(100%, 760px);
+    padding: clamp(28px, 6vw, 64px);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 24px 70px rgb(18 62 55 / 10%);
+}
+
+.error-page__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    color: var(--forest);
+    text-decoration: none;
+}
+
+.error-page__brand img { width: 42px; height: 42px; padding: 7px; border-radius: 12px; background: var(--forest); object-fit: contain; }
+.error-page__brand strong { font: 700 20px/1 var(--serif); letter-spacing: -.04em; }
+.error-page__code { margin: clamp(34px, 7vw, 74px) 0 10px; color: #598377; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.error-page h1 { max-width: 620px; margin: 0; font: 600 clamp(34px, 6vw, 64px)/1.08 var(--serif); letter-spacing: -.05em; }
+.error-page p { max-width: 570px; margin: 18px 0 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.error-page__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+.error-page__actions a { min-height: 44px; }
+
+:root[data-theme="dark"] .error-body { background: radial-gradient(circle at 12% 8%, #1d3a31 0, transparent 26rem), #10201c; }
+:root[data-theme="dark"] .error-page { background: #172a24; border-color: #35574c; box-shadow: 0 24px 70px rgb(0 0 0 / 22%); }
+:root[data-theme="dark"] .error-page__brand { color: #e9f5ef; }
+:root[data-theme="dark"] .error-page__code { color: #9bc8b7; }
+:root[data-theme="dark"] .error-page p { color: #b9cec5; }
+
+@media (max-width: 560px) {
+    .error-body { padding: 16px; }
+    .error-page { padding: 25px 20px 28px; border-radius: 18px; }
+    .error-page__code { margin-top: 38px; }
+    .error-page p { font-size: 14px; }
+    .error-page__actions { flex-direction: column; }
+    .error-page__actions a { width: 100%; }
+}

@@ -19,6 +19,21 @@ bergantung pada Railway, Vercel, atau runtime serverless.
 6. Jika semua akun memakai email sekolah, isi `GOOGLE_ALLOWED_DOMAIN` (contoh `sekolah.sch.id`).
 7. Di Google Cloud, tambahkan URL callback dari nilai `GOOGLE_REDIRECT_URI` sebagai Authorized redirect URI.
 
+8. Setelah `.env` diisi, jalankan preflight berikut dari folder project:
+
+       php artisan library:deploy-check
+       php artisan library:diagnose-oauth --verify-client
+
+   Perintah pertama memeriksa environment, key, HTTPS, database, session,
+   asset build, dan permission folder tanpa mencetak secret. Perintah kedua
+   memeriksa pasangan kredensial Google ke endpoint Google.
+
+Foto profil disimpan di `storage/app/private/profile-photos` dan hanya disajikan
+melalui route yang terautentikasi. Pada instalasi lama, pindahkan isi
+`storage/app/public/profile-photos` ke folder privat tersebut setelah menyalin
+backup; nama path di database tetap sama. Jangan biarkan folder
+`public/profile-photos` atau symlink `storage/profile-photos` berisi foto lama.
+
 Secara default, Google login membuat profil `student` dan data anggota baru
 tanpa NIS. Pertahankan `GOOGLE_AUTO_REGISTER_STUDENTS=true` untuk sekolah tanpa
 NIS. Set ke `false` hanya bila petugas ingin membuat data anggota lebih dulu.
@@ -54,9 +69,24 @@ Jalankan dari folder project:
     php artisan storage:link
     php artisan optimize
 
+Migrasi akan memeriksa duplikat kode buku, identitas anggota (email/NIS/NISN),
+dan nama kategori sebelum membuat constraint unik. Jika ditemukan, migrasi
+berhenti dengan pesan nilai yang perlu dirapikan; data tidak dihapus otomatis.
+Migrasi optimasi indeks hanya menghapus indeks yang benar-benar redundant; isi
+tabel dan constraint unik tetap dipertahankan.
+
 Jika hosting tidak menyediakan Node.js, jalankan `npm ci` dan `npm run build`
 di komputer/CI lalu unggah folder `public/build` bersama project. Web server
 tetap harus menunjuk ke folder `public`.
+
+Nilai berikut memang harus diisi dari akun/domain produksi dan tidak aman untuk
+diisi otomatis oleh source code:
+
+- `APP_URL` dan `GOOGLE_REDIRECT_URI`: domain HTTPS final.
+- `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD`: database produksi yang dibuat
+  di provider hosting.
+- `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET`: kredensial OAuth dari Google
+  Cloud. Secret jangan pernah di-commit ke GitHub.
 
 Buat admin pertama secara interaktif. Jangan menaruh password di history terminal:
 
@@ -86,6 +116,8 @@ Jika notifikasi atau queue kelak diganti dari database ke driver asynchronous, j
 - Setelah env production terisi, jalankan `php artisan library:diagnose-oauth`
   (tambahkan `--verify-client` bila server boleh menghubungi Google) dan pastikan
   tidak ada pemeriksaan berstatus GAGAL.
+- Jalankan `php artisan library:deploy-check`; tidak boleh ada pemeriksaan
+  berstatus GAGAL sebelum DNS diarahkan.
 - Tidak ada akun demo atau password default.
 - Web server hanya mengekspos folder public.
 - storage dan bootstrap/cache dapat ditulis oleh proses web server.

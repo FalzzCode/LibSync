@@ -4,6 +4,7 @@
 @section('eyebrow', 'Administrasi')
 
 @section('content')
+@php($roleLabels = ['admin' => 'Admin', 'staff' => 'Petugas'])
 <section class="page">
     <div class="page-header">
         <div>
@@ -32,7 +33,7 @@
         <div class="table-wrapper">
             <table class="data-table">
                 <thead>
-                    <tr><th>Pengguna</th><th>Email</th><th>Peran</th><th><span class="sr-only">Aksi</span></th></tr>
+                    <tr><th scope="col">Pengguna</th><th scope="col">Email</th><th scope="col">Peran</th><th scope="col"><span class="sr-only">Aksi</span></th></tr>
                 </thead>
                 <tbody>
                     @forelse($users as $user)
@@ -50,7 +51,7 @@
                                 </div>
                             </td>
                             <td>{{ $user->email }}</td>
-                            <td><span class="role-badge">{{ ucfirst($user->role) }}</span></td>
+                            <td><span class="role-badge">{{ $roleLabels[$user->role] ?? ucfirst($user->role) }}</span></td>
                             <td>
                                 <div class="table-actions">
                                     <a class="icon-button" href="{{ route('users.edit', $user) }}" aria-label="Edit {{ $user->name }}">✎</a>

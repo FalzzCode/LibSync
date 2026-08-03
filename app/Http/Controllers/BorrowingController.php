@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -25,25 +26,38 @@ class BorrowingController extends Controller
 {
     public function index(Request $request): View
     {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', Rule::in(['borrowed', 'overdue', 'returned', 'requested', 'return_requested', 'extension_requested'])],
+            'from' => ['nullable', 'date'],
+            'until' => ['nullable', 'date'],
+        ]);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $status = $filters['status'] ?? null;
+        $from = $filters['from'] ?? null;
+        $until = $filters['until'] ?? null;
+        if ($from && $until && strtotime($from) > strtotime($until)) {
+            [$from, $until] = [$until, $from];
+        }
+
         $borrowings = Borrowing::with(['member', 'book', 'user'])
-            ->when($request->filled('search'), function (Builder $query) use ($request) {
-                $term = $request->string('search')->trim()->substr(0, 120)->toString();
-                if ($term === '') {
+            ->when($search !== '', function (Builder $query) use ($search) {
+                if ($search === '') {
                     return;
                 }
-                $query->where(function (Builder $query) use ($term) {
-                    $query->whereHas('member', fn (Builder $member) => $member->where('name', 'like', "%{$term}%"))
-                        ->orWhereHas('book', fn (Builder $book) => $book->where('title', 'like', "%{$term}%"));
+                $query->where(function (Builder $query) use ($search) {
+                    $query->whereHas('member', fn (Builder $member) => $member->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('book', fn (Builder $book) => $book->where('title', 'like', "%{$search}%"));
                 });
             })
-            ->when($request->status === 'borrowed', fn (Builder $query) => $query->where('status', 'borrowed')->whereDate('due_date', '>=', today()))
-            ->when($request->status === 'overdue', fn (Builder $query) => $query->overdue())
-            ->when($request->status === 'returned', fn (Builder $query) => $query->where('status', 'returned'))
-            ->when($request->status === 'requested', fn (Builder $query) => $query->where('status', 'requested'))
-            ->when($request->status === 'return_requested', fn (Builder $query) => $query->where('status', 'return_requested'))
-            ->when($request->status === 'extension_requested', fn (Builder $query) => $query->whereIn('status', ['borrowed', 'return_requested'])->whereNotNull('extension_requested_at'))
-            ->when($request->filled('from'), fn (Builder $query) => $query->whereDate('borrowed_at', '>=', $request->from))
-            ->when($request->filled('until'), fn (Builder $query) => $query->whereDate('borrowed_at', '<=', $request->until))
+            ->when($status === 'borrowed', fn (Builder $query) => $query->where('status', 'borrowed')->whereDate('due_date', '>=', today()))
+            ->when($status === 'overdue', fn (Builder $query) => $query->overdue())
+            ->when($status === 'returned', fn (Builder $query) => $query->where('status', 'returned'))
+            ->when($status === 'requested', fn (Builder $query) => $query->where('status', 'requested'))
+            ->when($status === 'return_requested', fn (Builder $query) => $query->where('status', 'return_requested'))
+            ->when($status === 'extension_requested', fn (Builder $query) => $query->whereIn('status', ['borrowed', 'return_requested'])->whereNotNull('extension_requested_at'))
+            ->when($from, fn (Builder $query) => $query->whereDate('borrowed_at', '>=', $from))
+            ->when($until, fn (Builder $query) => $query->whereDate('borrowed_at', '<=', $until))
             ->latest('borrowed_at')->latest('id')->get();
 
         return view('borrowings.index', compact('borrowings'));
@@ -219,6 +233,22 @@ class BorrowingController extends Controller
             $before = $borrowing->only(['returned_at', 'status', 'fine']);
             $borrowing->update(['returned_at' => $returnedAt, 'status' => 'returned', 'fine' => $fine]);
             Book::lockForUpdate()->findOrFail($borrowing->book_id)->increment('stock');
+            $overdueWarning = Warning::query()
+                ->where('borrowing_id', $borrowing->id)
+                ->where('type', 'overdue')
+                ->whereNull('resolved_at')
+                ->lockForUpdate()
+                ->first();
+            if ($overdueWarning) {
+                $overdueWarning->update([
+                    'resolved_at' => now(),
+                    'resolution_note' => 'Peminjaman sudah dikembalikan.',
+                ]);
+                ActivityLogger::write('resolve', 'warning', $overdueWarning, null, [
+                    'resolved_at' => $overdueWarning->resolved_at,
+                    'resolution_note' => $overdueWarning->resolution_note,
+                ]);
+            }
             $reservation = BookReservation::with(['member.user', 'book'])
                 ->where('book_id', $borrowing->book_id)
                 ->where('status', 'waiting')

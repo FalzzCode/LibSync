@@ -8,7 +8,7 @@ class StoreBorrowingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return in_array($this->user()?->role, ['admin', 'staff'], true);
     }
 
     public function rules(): array
@@ -16,13 +16,16 @@ class StoreBorrowingRequest extends FormRequest
         return [
             'member_id' => ['required', 'exists:anggota,id'],
             'book_id' => ['required', 'exists:buku,id'],
-            'borrowed_at' => ['required', 'date'],
+            'borrowed_at' => ['required', 'date', 'before_or_equal:today'],
             'due_date' => ['required', 'date', 'after_or_equal:borrowed_at'],
         ];
     }
 
     public function messages(): array
     {
-        return ['due_date.after_or_equal' => 'Tanggal jatuh tempo tidak boleh sebelum tanggal pinjam.'];
+        return [
+            'borrowed_at.before_or_equal' => 'Tanggal pinjam tidak boleh setelah hari ini.',
+            'due_date.after_or_equal' => 'Tanggal jatuh tempo tidak boleh sebelum tanggal pinjam.',
+        ];
     }
 }

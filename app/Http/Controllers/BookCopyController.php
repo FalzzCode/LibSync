@@ -7,19 +7,19 @@ use App\Models\BookCopy;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class BookCopyController extends Controller
 {
     public function index(Request $request): View
     {
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:120']]);
+        $search = trim((string) ($filters['search'] ?? ''));
         $copies = BookCopy::with('book:id,title,book_code')
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $term = $request->string('search')->trim()->substr(0, 120)->toString();
-                if ($term === '') {
-                    return;
-                }
-                $query->where(fn ($q) => $q->where('inventory_code', 'like', "%{$term}%")->orWhere('barcode', 'like', "%{$term}%")->orWhereHas('book', fn ($book) => $book->where('title', 'like', "%{$term}%")));
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(fn ($q) => $q->where('inventory_code', 'like', "%{$search}%")->orWhere('barcode', 'like', "%{$search}%")->orWhereHas('book', fn ($book) => $book->where('title', 'like', "%{$search}%")));
             })->latest()->get();
         $books = Book::query()
             ->whereNull('archived_at')
@@ -31,6 +31,10 @@ class BookCopyController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge([
+            'inventory_code' => trim((string) $request->input('inventory_code')),
+            'barcode' => trim((string) $request->input('barcode')),
+        ]);
         $data = $request->validate([
             'book_id' => ['required', 'exists:buku,id'],
             'inventory_code' => ['required', 'string', 'max:100', 'unique:salinan_buku,inventory_code'],
@@ -38,7 +42,14 @@ class BookCopyController extends Controller
             'condition' => ['required', 'in:good,minor_damage,damaged'],
             'note' => ['nullable', 'string', 'max:1000'],
         ]);
-        $copy = BookCopy::create($data);
+        $copy = DB::transaction(function () use ($data): BookCopy {
+            $book = Book::query()->lockForUpdate()->findOrFail($data['book_id']);
+            if ($book->archived_at) {
+                throw ValidationException::withMessages(['book_id' => 'Buku yang diarsipkan tidak dapat menerima eksemplar baru.']);
+            }
+
+            return BookCopy::create($data);
+        });
         ActivityLogger::write('create', 'book_copy', $copy, null, $copy->toArray());
 
         return back()->with('success', 'Eksemplar fisik berhasil ditambahkan.');

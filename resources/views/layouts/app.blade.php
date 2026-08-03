@@ -29,10 +29,11 @@
     <link rel="stylesheet" href="{{ asset('css/motion-performance.css') }}?v=20260801-9">
     <link rel="stylesheet" href="{{ asset('css/action-center.css') }}?v=20260801-2">
     <link rel="stylesheet" href="{{ asset('css/circulation-dashboard.css') }}?v=20260802-3">
-    <link rel="stylesheet" href="{{ asset('css/imports.css') }}?v=20260802-1">
+    <link rel="stylesheet" href="{{ asset('css/imports.css') }}?v=20260803-1">
 </head>
 <body>
     @php
+        $roleLabels = ['admin' => 'Admin', 'staff' => 'Petugas', 'student' => 'Siswa', 'developer' => 'Pengembang'];
         $brandSubtitle = match (Auth::user()->role) {
             'student' => 'Portal siswa',
             'developer' => 'Mode pengembang',
@@ -50,8 +51,8 @@
             </div>
             <nav class="sidebar__menu">
                 @if (Auth::user()->role === 'developer')
-                <p class="sidebar__section-label">Developer tools</p>
-                <a href="{{ route('developer.index') }}" @class(['sidebar__link', 'sidebar__link--active' => request()->routeIs('developer.*')])><span aria-hidden="true">⌘</span> Developer panel</a>
+                <p class="sidebar__section-label">Alat pengembang</p>
+                <a href="{{ route('developer.index') }}" @class(['sidebar__link', 'sidebar__link--active' => request()->routeIs('developer.*')])><span aria-hidden="true">⌘</span> Panel pengembang</a>
                 <p class="sidebar__section-label">Akun</p>
                 <a href="{{ route('profile.edit') }}" @class(['sidebar__link', 'sidebar__link--active' => request()->routeIs('profile.*')])><span aria-hidden="true">◉</span> Profil</a>
                 @elseif (Auth::user()->role === 'student')
@@ -88,13 +89,13 @@
                 <div class="header__context"><span>LibSync · perpustakaan digital</span><strong>@yield('eyebrow', 'Ringkasan operasional')</strong></div>
                 <div class="header__right">
                     @if (app()->environment('local') && (Auth::user()->role === 'developer' || session()->has('developer_original_user_id')))
-                        <a class="developer-mode-link" href="{{ route('developer.index') }}">Developer</a>
+                        <a class="developer-mode-link" href="{{ route('developer.index') }}">Pengembang</a>
                     @endif
                     <button id="themeToggle" class="theme-toggle" type="button" aria-label="Aktifkan mode gelap" title="Ganti tema"><span aria-hidden="true">◐</span></button>
                 <div class="header__profile-wrap">
                     <button class="header__profile" id="profileToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="profileDropdown">
                         @if (Auth::user()->profile_photo_path)<img class="avatar" src="{{ route('profile.photo', Auth::user()) }}?v={{ Auth::user()->updated_at?->timestamp }}" alt="">@elseif(Auth::user()->avatar_url)<img class="avatar" src="{{ Auth::user()->avatar_url }}" alt="">@else<span class="avatar" aria-hidden="true">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>@endif
-                        <span class="header__profile-info"><strong>{{ Auth::user()->name }}</strong><small>{{ ucfirst(Auth::user()->role) }}</small></span><span aria-hidden="true">⌄</span>
+                        <span class="header__profile-info"><strong>{{ Auth::user()->name }}</strong><small>{{ $roleLabels[Auth::user()->role] ?? ucfirst(Auth::user()->role) }}</small></span><span aria-hidden="true">⌄</span>
                     </button>
                     <div class="dropdown-menu" id="profileDropdown" role="menu">
                         <p>Masuk sebagai <strong>{{ Auth::user()->email }}</strong></p>
@@ -143,7 +144,7 @@
     @endphp
     <div class="page-loader page-loader--{{ $loaderType }}" id="pageLoader" hidden role="status" aria-live="polite" aria-label="Memuat halaman">
         <div class="page-loader__content">
-            <main class="page-loader__main" aria-hidden="true">
+            <div class="page-loader__main" aria-hidden="true">
                 <div class="page-loader__label"></div><div class="page-loader__title"></div>
                 <section class="page-loader__filters"><i></i><b></b><b></b></section>
                 <section class="page-loader__table"><header><i></i><i></i><i></i><i></i></header><div><i></i><i></i><i></i><i></i></div><div><i></i><i></i><i></i><i></i></div><div><i></i><i></i><i></i><i></i></div><div><i></i><i></i><i></i><i></i></div></section>
@@ -186,7 +187,7 @@
                         @endswitch
                     </section>
                 @endforeach
-            </main>
+            </div>
             <p>Menyiapkan halaman…</p>
         </div>
     </div>

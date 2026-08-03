@@ -103,4 +103,39 @@ class ImportValidationTest extends TestCase
             'phone' => null,
         ]);
     }
+
+    public function test_impor_anggota_melewati_email_yang_milik_data_arsip(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $member = Member::create([
+            'name' => 'Anggota Arsip',
+            'email' => 'arsip-import@example.test',
+            'phone' => null,
+        ]);
+        $member->delete();
+        $csv = UploadedFile::fake()->createWithContent('anggota-arsip.csv', "nama,email\nAnggota Baru,arsip-import@example.test\n");
+
+        $this->actingAs($staff)->post(route('imports.store'), [
+            'type' => 'members',
+            'file' => $csv,
+        ])->assertRedirect(route('imports.create'))
+            ->assertSessionHas('success', '0 data berhasil diimpor; 1 baris dilewati karena format tidak valid.');
+
+        $this->assertDatabaseCount('anggota', 1);
+    }
+
+    public function test_impor_anggota_tidak_menggabungkan_nama_sama_tanpa_identitas_stabil(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        Member::create(['name' => 'Nama Sama', 'phone' => null]);
+        $csv = UploadedFile::fake()->createWithContent('anggota-tanpa-identitas.csv', "nama,kelas\nNama Sama,XI\n");
+
+        $this->actingAs($staff)->post(route('imports.store'), [
+            'type' => 'members',
+            'file' => $csv,
+        ])->assertRedirect(route('imports.create'))->assertSessionHas('success');
+
+        $this->assertDatabaseCount('anggota', 2);
+        $this->assertDatabaseHas('anggota', ['name' => 'Nama Sama', 'class' => 'XI']);
+    }
 }

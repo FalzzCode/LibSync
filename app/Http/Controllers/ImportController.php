@@ -132,23 +132,32 @@ class ImportController extends Controller
                         $entryYear = trim($row['entry_year'] ?? '');
                         $phone = array_key_exists('phone', $row) ? trim((string) $row['phone']) : null;
                         $nis = trim($row['nis'] ?? '');
-                        $email = trim($row['email'] ?? '');
+                        $email = strtolower(trim($row['email'] ?? ''));
                         if (! trim($row['name']) || ($phone !== null && $phone !== '' && ! preg_match('/^[0-9+()\-\s]+$/', $phone)) || ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) || ($entryYear !== '' && (! ctype_digit($entryYear) || (int) $entryYear < 1900 || (int) $entryYear > now()->year))) {
                             $skipped++;
 
                             continue;
                         }
-                        $memberByNis = $nis !== '' ? Member::where('nis', $nis)->first() : null;
-                        $memberByEmail = $email !== '' ? Member::where('email', $email)->first() : null;
+                        $memberByNis = $nis !== '' ? Member::withTrashed()->where('nis', $nis)->first() : null;
+                        $memberByEmail = $email !== '' ? Member::withTrashed()->where('email', $email)->first() : null;
+                        if ($memberByNis?->trashed() || $memberByEmail?->trashed()) {
+                            $skipped++;
+
+                            continue;
+                        }
                         if ($memberByNis && $memberByEmail && $memberByNis->id !== $memberByEmail->id) {
                             $skipped++;
 
                             continue;
                         }
                         $member = $memberByNis ?? $memberByEmail;
-                        if (! $member) {
+                        // Without a stable identity, a name alone is not
+                        // enough to decide that two rows represent one
+                        // person. Create a new row instead of silently
+                        // merging students who share the same name.
+                        if (! $member && $phone !== null && $phone !== '') {
                             $member = Member::where('name', trim($row['name']))
-                                ->when($phone !== null, fn ($query) => $query->where('phone', $phone ?: null))
+                                ->where('phone', $phone)
                                 ->first();
                         }
                         $memberData = [

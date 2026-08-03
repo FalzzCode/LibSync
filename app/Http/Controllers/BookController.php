@@ -8,7 +8,10 @@ use App\Models\Category;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -17,9 +20,14 @@ class BookController extends Controller
     // Menampilkan daftar buku, dengan pencarian sesuai data yang tampil di koleksi
     public function index(Request $request): View
     {
-        $search = $request->string('search')->trim()->substr(0, 120)->toString();
-        $categoryId = $request->query('category');
-        $status = $request->query('status');
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'category' => ['nullable', 'integer', 'exists:kategori,id'],
+            'status' => ['nullable', Rule::in(['tersedia', 'habis'])],
+        ]);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $categoryId = $filters['category'] ?? null;
+        $status = $filters['status'] ?? null;
 
         $books = Book::with('category')
             ->when(filled($search), function ($query) use ($search) {
@@ -83,6 +91,9 @@ class BookController extends Controller
 
         if ($request->hasFile('cover_image')) {
             $newCover = $request->file('cover_image')->store('books', 'public');
+            if (! is_string($newCover) || $newCover === '') {
+                throw ValidationException::withMessages(['cover_image' => 'Cover buku gagal disimpan. Periksa penyimpanan lalu coba lagi.']);
+            }
             $data['cover_image'] = $newCover;
         }
 
@@ -120,6 +131,9 @@ class BookController extends Controller
             // setelah update database berhasil agar kegagalan upload/update
             // tidak membuat buku kehilangan cover yang masih valid.
             $newCover = $request->file('cover_image')->store('books', 'public');
+            if (! is_string($newCover) || $newCover === '') {
+                throw ValidationException::withMessages(['cover_image' => 'Cover buku gagal disimpan. Periksa penyimpanan lalu coba lagi.']);
+            }
             $data['cover_image'] = $newCover;
         }
 
@@ -145,21 +159,44 @@ class BookController extends Controller
     // Menghapus buku
     public function destroy(Book $book): RedirectResponse
     {
-        if ($book->borrowings()->exists()) {
-            return back()->with('error', 'Buku tidak dapat dihapus karena sudah memiliki riwayat transaksi.');
+        $deleteError = null;
+        $coverPath = null;
+        DB::transaction(function () use ($book, &$deleteError, &$coverPath): void {
+            $book = Book::query()->lockForUpdate()->findOrFail($book->id);
+            if ($book->borrowings()->lockForUpdate()->exists()) {
+                $deleteError = 'Buku tidak dapat dihapus karena sudah memiliki riwayat transaksi.';
+
+                return;
+            }
+
+            if ($book->copies()->lockForUpdate()->exists()) {
+                $deleteError = 'Buku tidak dapat dihapus karena masih memiliki salinan fisik. Hapus salinan atau arsipkan buku terlebih dahulu.';
+
+                return;
+            }
+
+            if ($book->reservations()->lockForUpdate()->exists()) {
+                $deleteError = 'Buku tidak dapat dihapus karena masih memiliki data antrean. Arsipkan buku atau selesaikan antreannya terlebih dahulu.';
+
+                return;
+            }
+
+            $before = $book->toArray();
+            $coverPath = $book->cover_image;
+            $book->delete();
+            ActivityLogger::write('delete', 'book', $book, $before, null);
+        });
+
+        if ($deleteError) {
+            return back()->with('error', $deleteError);
         }
 
-        if ($book->reservations()->exists()) {
-            return back()->with('error', 'Buku tidak dapat dihapus karena masih memiliki data antrean. Arsipkan buku atau selesaikan antreannya terlebih dahulu.');
+        // Remove the file only after the database transaction succeeds. If a
+        // concurrent relation blocks deletion, the existing cover remains
+        // usable instead of becoming an orphaned data loss.
+        if ($coverPath) {
+            Storage::disk('public')->delete($coverPath);
         }
-
-        $before = $book->toArray();
-        if ($book->cover_image) {
-            Storage::disk('public')->delete($book->cover_image);
-        }
-
-        $book->delete();
-        ActivityLogger::write('delete', 'book', $book, $before, null);
 
         return redirect()->route('books.index')->with('success', 'Buku berhasil dihapus.');
     }

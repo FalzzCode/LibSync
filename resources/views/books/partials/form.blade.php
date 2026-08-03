@@ -73,7 +73,7 @@
                 <div class="file-field__preview book-cover book-cover--form" hidden aria-hidden="true"></div>
             @endif
             <label for="cover_image" class="file-field__label"><span aria-hidden="true">↑</span><strong>Unggah cover</strong><small>JPG, PNG, atau WEBP</small></label>
-            <input id="cover_image" type="file" name="cover_image" accept="image/*" {{ $book ? '' : 'required' }}>
+            <input id="cover_image" type="file" name="cover_image" accept="image/jpeg,image/png,image/webp" {{ $book ? '' : 'required' }}>
         </div>
         @error('cover_image') <small class="field-error">{{ $message }}</small> @enderror
     </div>

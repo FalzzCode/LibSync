@@ -8,6 +8,7 @@ use App\Models\Borrowing;
 use App\Models\Category;
 use App\Models\Member;
 use App\Models\User;
+use App\Models\Warning;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -71,5 +72,36 @@ class ScheduledLibraryTasksTest extends TestCase
         $this->assertDatabaseHas('reservasi_buku', ['id' => $expired->id, 'status' => 'expired']);
         $this->assertDatabaseHas('reservasi_buku', ['id' => $next->id, 'status' => 'ready']);
         $this->assertDatabaseHas('notifications', ['notifiable_id' => $nextUser->id]);
+    }
+
+    public function test_pengembalian_menutup_peringatan_terlambat_yang_sudah_terbuka(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $member = Member::create(['name' => 'Anggota Selesai', 'phone' => '08123456769']);
+        $book = $this->book();
+        $borrowing = Borrowing::create([
+            'member_id' => $member->id,
+            'book_id' => $book->id,
+            'user_id' => $staff->id,
+            'borrowed_at' => today()->subDays(10),
+            'due_date' => today()->subDay(),
+            'status' => 'borrowed',
+        ]);
+        $warning = Warning::create([
+            'member_id' => $member->id,
+            'borrowing_id' => $borrowing->id,
+            'type' => 'overdue',
+            'level' => 'warning',
+            'title' => 'Peminjaman terlambat',
+            'message' => 'Peringatan uji.',
+        ]);
+
+        $this->actingAs($staff)->post(route('borrowings.return', $borrowing), [
+            'returned_at' => today()->toDateString(),
+        ])->assertRedirect();
+
+        $updatedWarning = $warning->fresh();
+        $this->assertNotNull($updatedWarning?->resolved_at);
+        $this->assertSame('Peminjaman sudah dikembalikan.', $updatedWarning?->resolution_note);
     }
 }

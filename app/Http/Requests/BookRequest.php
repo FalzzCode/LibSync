@@ -7,9 +7,23 @@ use Illuminate\Validation\Rule;
 
 class BookRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $fields = ['title', 'author', 'book_code', 'isbn', 'publisher', 'shelf', 'language'];
+        $normalized = [];
+
+        foreach ($fields as $field) {
+            if ($this->has($field)) {
+                $normalized[$field] = trim((string) $this->input($field));
+            }
+        }
+
+        $this->merge($normalized);
+    }
+
     public function authorize(): bool
     {
-        return true;
+        return in_array($this->user()?->role, ['admin', 'staff'], true);
     }
 
     public function rules(): array
@@ -30,7 +44,9 @@ class BookRequest extends FormRequest
             'language' => ['nullable', 'string', 'max:50'],
             'page_count' => ['nullable', 'integer', 'min:1', 'max:99999'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'cover_image' => [$isCreate ? 'required' : 'nullable', 'image', 'max:2048'],
+            // SVG is intentionally excluded: covers are served from a public
+            // disk and an uploaded SVG could contain active markup/scripts.
+            'cover_image' => [$isCreate ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 
@@ -47,6 +63,7 @@ class BookRequest extends FormRequest
             'page_count.min' => 'Jumlah halaman minimal 1.',
             'cover_image.required' => 'Cover buku wajib diupload.',
             'cover_image.image' => 'File cover harus berupa gambar.',
+            'cover_image.mimes' => 'Cover hanya boleh berformat JPG, PNG, atau WEBP.',
         ];
     }
 }

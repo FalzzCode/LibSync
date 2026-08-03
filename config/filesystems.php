@@ -39,7 +39,10 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Never expose the private application root through Laravel's
+            // automatic /storage/{path} route. Private files are served only
+            // by controllers that perform their own authorization checks.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -49,6 +52,16 @@ return [
             'root' => storage_path('app/public'),
             'url' => rtrim((string) $assetUrl, '/').'/storage',
             'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // Profile photos are served through an authenticated controller and
+        // must not become public just because `storage:link` exists.
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],

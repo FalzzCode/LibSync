@@ -10,6 +10,7 @@ use App\Services\MemberStanding;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -17,18 +18,21 @@ class FineController extends Controller
 {
     public function index(Request $request): View
     {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', Rule::in(['unpaid', 'partial', 'paid'])],
+        ]);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $status = $filters['status'] ?? null;
+
         $fines = Fine::with(['member', 'borrowing.book', 'payments.receiver'])
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $term = $request->string('search')->trim()->substr(0, 120)->toString();
-                if ($term === '') {
-                    return;
-                }
-                $query->where(function ($query) use ($term) {
-                    $query->whereHas('member', fn ($member) => $member->where('name', 'like', "%{$term}%"))
-                        ->orWhereHas('borrowing.book', fn ($book) => $book->where('title', 'like', "%{$term}%"));
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->whereHas('member', fn ($member) => $member->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('borrowing.book', fn ($book) => $book->where('title', 'like', "%{$search}%"));
                 });
             })
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
+            ->when($status, fn ($query) => $query->where('status', $status))
             ->latest()
             ->get();
 
@@ -44,6 +48,10 @@ class FineController extends Controller
         ]);
 
         DB::transaction(function () use ($fine, $data) {
+            // Keep the lock order member -> fine consistent with member
+            // deletion and standing refreshes to avoid a payment/delete
+            // deadlock under concurrent requests.
+            $member = Member::lockForUpdate()->findOrFail($fine->member_id);
             $fine = Fine::lockForUpdate()->findOrFail($fine->id);
             if ($fine->status === 'paid') {
                 throw ValidationException::withMessages(['amount' => 'Denda ini sudah lunas.']);
@@ -59,7 +67,7 @@ class FineController extends Controller
             ]);
             $paid = $fine->paid_amount + $data['amount'];
             $fine->update(['paid_amount' => $paid, 'status' => $paid >= $fine->amount ? 'paid' : 'partial']);
-            MemberStanding::refresh(Member::lockForUpdate()->findOrFail($fine->member_id));
+            MemberStanding::refresh($member);
             ActivityLogger::write('fine_payment', 'fine', $fine, null, ['amount' => $data['amount'], 'method' => $data['method']]);
         });
 

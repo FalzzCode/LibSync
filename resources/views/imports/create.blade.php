@@ -40,8 +40,14 @@
                     <span class="import-step__number" aria-hidden="true">2</span>
                     <div class="form-group">
                         <label for="file">File CSV</label>
-                        <input class="import-file-input" id="file" name="file" type="file" accept=".csv,text/csv" required>
-                        <small class="field-hint">Gunakan CSV UTF-8 dengan pemisah koma (,). Ukuran maksimal 2 MB.</small>
+                        <div class="import-file-picker" data-import-file-picker>
+                            <input class="import-file-input" id="file" name="file" type="file" accept=".csv,text/csv" aria-describedby="fileHint" required>
+                            <label class="import-file-picker__label" for="file">
+                                <span class="import-file-picker__icon" data-solar-icon="solar:upload-minimalistic-linear" aria-hidden="true">↑</span>
+                                <span><strong data-import-file-name>Pilih file CSV</strong><small data-import-file-status>Belum ada file dipilih</small></span>
+                            </label>
+                        </div>
+                        <small class="field-hint" id="fileHint">Gunakan CSV UTF-8 dengan pemisah koma (,). Ukuran maksimal 2 MB.</small>
                     </div>
                 </div>
             </div>

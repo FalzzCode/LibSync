@@ -74,6 +74,11 @@ class GoogleOAuthTest extends TestCase
         $driver->shouldReceive('user')->once()->andReturn($googleUser);
         Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
 
+        // A student URL can be left in the guest session before a staff
+        // account completes Google sign-in; the role-safe redirect must
+        // return the staff member to the staff dashboard instead.
+        $this->get(route('student.catalog'))->assertRedirect(route('login'));
+
         $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
             ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
             ->assertRedirect(route('dashboard'));
@@ -152,6 +157,31 @@ class GoogleOAuthTest extends TestCase
             'role' => 'student',
             'google_id' => 'google-member-1',
         ]);
+    }
+
+    public function test_google_sign_in_does_not_crash_when_member_email_belongs_to_archived_data(): void
+    {
+        $member = Member::create([
+            'name' => 'Anggota Arsip',
+            'email' => 'arsip@example.test',
+            'phone' => null,
+        ]);
+        $member->delete();
+
+        $googleUser = Mockery::mock();
+        $googleUser->shouldReceive('getId')->once()->andReturn('google-archived-1');
+        $googleUser->shouldReceive('getEmail')->once()->andReturn('arsip@example.test');
+        $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
+        $driver->shouldReceive('user')->once()->andReturn($googleUser);
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
+
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('email', 'Data anggota untuk email ini sudah diarsipkan. Hubungi petugas sebelum login kembali.');
+
+        $this->assertDatabaseMissing('pengguna', ['email' => 'arsip@example.test']);
     }
 
     public function test_unknown_google_account_can_be_rejected_when_auto_registration_is_disabled(): void

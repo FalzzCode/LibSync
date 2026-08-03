@@ -37,7 +37,7 @@
         <div class="table-card__meta"><span>{{ $warnings->count() }} peringatan ditemukan</span></div>
         <div class="table-wrapper">
             <table class="data-table">
-                <thead><tr><th>Prioritas</th><th>Informasi</th><th>Anggota</th><th>Waktu</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+                <thead><tr><th scope="col">Prioritas</th><th scope="col">Informasi</th><th scope="col">Anggota</th><th scope="col">Waktu</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Aksi</span></th></tr></thead>
                 <tbody>
                     @forelse($warnings as $warning)
                         <tr>

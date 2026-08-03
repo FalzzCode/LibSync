@@ -66,8 +66,9 @@ class ProfileTest extends TestCase
 
     public function test_user_can_upload_and_replace_their_profile_photo(): void
     {
+        Storage::fake('private');
         Storage::fake('public');
-        Storage::disk('public')->put('profile-photos/old-photo.png', 'old photo');
+        Storage::disk('private')->put('profile-photos/old-photo.png', 'old photo');
         $user = User::factory()->create([
             'email' => 'foto@example.test',
             'profile_photo_path' => 'profile-photos/old-photo.png',
@@ -85,8 +86,9 @@ class ProfileTest extends TestCase
 
         $this->assertNotNull($newPhotoPath);
         $this->assertNotSame('profile-photos/old-photo.png', $newPhotoPath);
-        Storage::disk('public')->assertMissing('profile-photos/old-photo.png');
-        Storage::disk('public')->assertExists($newPhotoPath);
+        Storage::disk('private')->assertMissing('profile-photos/old-photo.png');
+        Storage::disk('private')->assertExists($newPhotoPath);
+        Storage::disk('public')->assertMissing($newPhotoPath);
         $this->actingAs($user->fresh())->get(route('profile.photo', $user))->assertOk();
     }
 
@@ -131,11 +133,38 @@ class ProfileTest extends TestCase
 
     public function test_user_cannot_access_another_users_profile_photo(): void
     {
-        Storage::fake('public');
-        Storage::disk('public')->put('profile-photos/private.png', 'photo');
+        Storage::fake('private');
+        Storage::disk('private')->put('profile-photos/private.png', 'photo');
         $owner = User::factory()->create(['profile_photo_path' => 'profile-photos/private.png']);
         $otherUser = User::factory()->create(['role' => 'staff']);
 
         $this->actingAs($otherUser)->get(route('profile.photo', $owner))->assertForbidden();
+    }
+
+    public function test_private_storage_cannot_be_served_by_the_framework_storage_route(): void
+    {
+        Storage::fake('private');
+        Storage::disk('private')->put('profile-photos/not-public.txt', 'secret');
+
+        $this->get('/storage/profile-photos/not-public.txt')->assertNotFound();
+    }
+
+    public function test_profile_photo_route_does_not_fall_back_to_public_profile_files(): void
+    {
+        Storage::fake('public');
+        Storage::fake('private');
+        Storage::disk('public')->put('profile-photos/legacy.png', 'legacy photo');
+        $user = User::factory()->create(['profile_photo_path' => 'profile-photos/legacy.png']);
+
+        $this->actingAs($user)->get(route('profile.photo', $user))->assertNotFound();
+    }
+
+    public function test_profile_photo_route_rejects_paths_outside_the_profile_photo_directory(): void
+    {
+        Storage::fake('private');
+        Storage::disk('private')->put('secrets.txt', 'private secret');
+        $user = User::factory()->create(['profile_photo_path' => 'secrets.txt']);
+
+        $this->actingAs($user)->get(route('profile.photo', $user))->assertNotFound();
     }
 }

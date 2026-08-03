@@ -44,7 +44,7 @@
         <div class="table-card__meta"><span>{{ $borrowings->count() }} transaksi ditemukan</span><span>Denda: Rp{{ number_format($borrowings->sum('fine'), 0, ',', '.') }}</span></div>
         <div class="table-wrapper">
             <table class="data-table">
-                <thead><tr><th>Anggota & buku</th><th>Tanggal pinjam</th><th>Jatuh tempo</th><th>Status</th><th>Denda</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+                <thead><tr><th scope="col">Anggota & buku</th><th scope="col">Tanggal pinjam</th><th scope="col">Jatuh tempo</th><th scope="col">Status</th><th scope="col">Denda</th><th scope="col"><span class="sr-only">Aksi</span></th></tr></thead>
                 <tbody>
                     @forelse($borrowings as $borrowing)
                         <tr>

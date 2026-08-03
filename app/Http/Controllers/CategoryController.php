@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -57,13 +58,23 @@ class CategoryController extends Controller
     // Menghapus kategori
     public function destroy(Category $category): RedirectResponse
     {
-        if ($category->books()->exists()) {
-            return back()->with('error', 'Kategori yang masih memiliki buku tidak dapat dihapus.');
-        }
+        $deleteError = null;
+        DB::transaction(function () use ($category, &$deleteError): void {
+            $category = Category::query()->lockForUpdate()->findOrFail($category->id);
+            if ($category->books()->lockForUpdate()->exists()) {
+                $deleteError = 'Kategori yang masih memiliki buku tidak dapat dihapus.';
 
-        $before = $category->toArray();
-        $category->delete();
-        ActivityLogger::write('delete', 'category', $category, $before, null);
+                return;
+            }
+
+            $before = $category->toArray();
+            $category->delete();
+            ActivityLogger::write('delete', 'category', $category, $before, null);
+        });
+
+        if ($deleteError) {
+            return back()->with('error', $deleteError);
+        }
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus.');
     }

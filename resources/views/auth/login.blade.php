@@ -9,8 +9,7 @@
     <link rel="stylesheet" href="{{ asset('css/responsive.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dark-mode.css') }}?v=20260802-2">
     <link rel="stylesheet" href="{{ asset('css/branding.css') }}?v=20260808-2">
-    <link rel="stylesheet" href="{{ asset('css/google-auth.css') }}?v=20260808-2">
-    <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/google-auth.css') }}?v=20260808-3">
 </head>
 <body class="auth-body">
     @php
@@ -59,7 +58,6 @@
                 @if ($showLocalLogin)
                     <div class="login__local-fallback">
                         <div class="login__local-heading">
-                            <span class="login__local-icon" aria-hidden="true"><iconify-icon icon="solar:key-minimalistic-linear"></iconify-icon></span>
                             <div><strong>Login alternatif</strong><p>Gunakan sementara jika Google sedang tidak tersedia.</p></div>
                         </div>
                         <div class="form-group">

@@ -32,7 +32,7 @@
         <div class="table-wrapper">
             <table class="data-table">
                 <thead>
-                    <tr><th>Anggota</th><th>Kelas</th><th>Kontak</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr>
+                    <tr><th scope="col">Anggota</th><th scope="col">Kelas</th><th scope="col">Kontak</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Aksi</span></th></tr>
                 </thead>
                 <tbody>
                     @forelse($members as $member)

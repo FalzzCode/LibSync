@@ -149,6 +149,57 @@ class BorrowingTest extends TestCase
         $this->assertSame(3, $book->fresh()->stock);
     }
 
+    public function test_tanggal_pengembalian_masa_depan_ditolak(): void
+    {
+        $user = $this->user();
+        $book = $this->book();
+        $member = Member::create(['name' => 'Pengembalian Masa Depan', 'phone' => '08123456786']);
+        $borrowing = Borrowing::create([
+            'member_id' => $member->id,
+            'book_id' => $book->id,
+            'user_id' => $user->id,
+            'borrowed_at' => today()->subDays(2),
+            'due_date' => today()->addDays(5),
+            'status' => 'borrowed',
+        ]);
+
+        $this->actingAs($user)->from(route('borrowings.show', $borrowing))
+            ->post(route('borrowings.return', $borrowing), ['returned_at' => today()->addDay()->toDateString()])
+            ->assertRedirect(route('borrowings.show', $borrowing))
+            ->assertSessionHasErrors('returned_at');
+
+        $this->assertDatabaseHas('peminjaman', ['id' => $borrowing->id, 'status' => 'borrowed', 'returned_at' => null]);
+        $this->assertSame(3, $book->fresh()->stock);
+    }
+
+    public function test_tanggal_peminjaman_masa_depan_ditolak(): void
+    {
+        $user = $this->user();
+        $book = $this->book();
+        $member = Member::create(['name' => 'Peminjaman Masa Depan', 'phone' => '08123456787']);
+
+        $this->actingAs($user)->from(route('borrowings.create'))
+            ->post(route('borrowings.store'), [
+                'member_id' => $member->id,
+                'book_id' => $book->id,
+                'borrowed_at' => today()->addDay()->toDateString(),
+                'due_date' => today()->addDays(8)->toDateString(),
+            ])
+            ->assertRedirect(route('borrowings.create'))
+            ->assertSessionHasErrors('borrowed_at');
+
+        $this->assertDatabaseCount('peminjaman', 0);
+        $this->assertSame(3, $book->fresh()->stock);
+    }
+
+    public function test_filter_transaksi_menolak_status_yang_tidak_dikenal(): void
+    {
+        $this->actingAs($this->user())
+            ->get(route('borrowings.index', ['status' => 'hapus-semua']))
+            ->assertRedirect()
+            ->assertSessionHasErrors('status');
+    }
+
     public function test_peminjaman_keempat_memblokir_akun_secara_otomatis(): void
     {
         $user = $this->user();

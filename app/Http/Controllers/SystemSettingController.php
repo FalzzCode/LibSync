@@ -6,6 +6,7 @@ use App\Models\SystemSetting;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SystemSettingController extends Controller
@@ -31,11 +32,13 @@ class SystemSettingController extends Controller
             'activation_code_days' => ['required', 'integer', 'min:1', 'max:30'],
         ]);
 
-        $before = collect($data)->mapWithKeys(fn ($value, $key) => [$key => SystemSetting::value($key)])->all();
-        foreach ($data as $key => $value) {
-            SystemSetting::query()->updateOrCreate(['key' => $key], ['value' => (string) $value]);
-        }
-        ActivityLogger::write('update', 'settings', null, $before, $data);
+        DB::transaction(function () use ($data): void {
+            $before = collect($data)->mapWithKeys(fn ($value, $key) => [$key => SystemSetting::value($key)])->all();
+            foreach ($data as $key => $value) {
+                SystemSetting::query()->updateOrCreate(['key' => $key], ['value' => (string) $value]);
+            }
+            ActivityLogger::write('update', 'settings', null, $before, $data);
+        });
 
         return back()->with('success', 'Pengaturan perpustakaan berhasil diperbarui.');
     }

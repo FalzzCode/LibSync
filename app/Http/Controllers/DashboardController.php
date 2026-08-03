@@ -26,7 +26,9 @@ class DashboardController extends Controller
         $totalBooks = Book::count();
         $totalCategories = Category::count();
         $totalMembers = Member::count();
-        $totalUsers = User::count();
+        // Student portal accounts are members, not staff users managed from
+        // the admin screen. Keep this KPI aligned with the dashboard label.
+        $totalUsers = User::whereIn('role', ['admin', 'staff'])->count();
         $activeBorrowings = Borrowing::open()->count();
         $returnedBorrowings = Borrowing::where('status', 'returned')->count();
         $overdueBorrowings = Borrowing::overdue()->count();
@@ -58,10 +60,10 @@ class DashboardController extends Controller
         $popularBooks = Borrowing::select('book_id', DB::raw('count(*) as transaction_count'))->with('book:id,title')->groupBy('book_id')->orderByDesc('transaction_count')->take(3)->get();
         $activeMembers = Borrowing::select('member_id', DB::raw('count(*) as transaction_count'))->with('member:id,name')->groupBy('member_id')->orderByDesc('transaction_count')->take(3)->get();
         $actionItems = collect([
-            ['label' => 'Permintaan pinjam', 'icon' => '⌛', 'count' => Borrowing::where('status', 'requested')->count(), 'description' => 'Siswa menunggu persetujuan peminjaman.', 'url' => route('borrowings.index', ['status' => 'requested'])],
-            ['label' => 'Permintaan kembali', 'icon' => '↩', 'count' => Borrowing::where('status', 'return_requested')->count(), 'description' => 'Buku sudah diajukan untuk dikembalikan.', 'url' => route('borrowings.index', ['status' => 'return_requested'])],
-            ['label' => 'Perpanjangan', 'icon' => '↗', 'count' => Borrowing::whereNotNull('extension_requested_at')->whereIn('status', ['borrowed', 'return_requested'])->count(), 'description' => 'Permintaan perpanjangan perlu diperiksa.', 'url' => route('borrowings.index', ['status' => 'extension_requested'])],
-            ['label' => 'Terlambat', 'icon' => '!', 'count' => $overdueBorrowings, 'description' => 'Segera hubungi anggota yang melewati jatuh tempo.', 'url' => route('borrowings.index', ['status' => 'overdue'])],
+            ['label' => 'Permintaan pinjam', 'icon' => 'solar:clock-circle-linear', 'fallback' => '⌛', 'count' => Borrowing::where('status', 'requested')->count(), 'description' => 'Siswa menunggu persetujuan peminjaman.', 'url' => route('borrowings.index', ['status' => 'requested'])],
+            ['label' => 'Permintaan kembali', 'icon' => 'solar:alt-arrow-left-linear', 'fallback' => '↩', 'count' => Borrowing::where('status', 'return_requested')->count(), 'description' => 'Buku sudah diajukan untuk dikembalikan.', 'url' => route('borrowings.index', ['status' => 'return_requested'])],
+            ['label' => 'Perpanjangan', 'icon' => 'solar:refresh-circle-linear', 'fallback' => '↗', 'count' => Borrowing::whereNotNull('extension_requested_at')->whereIn('status', ['borrowed', 'return_requested'])->count(), 'description' => 'Permintaan perpanjangan perlu diperiksa.', 'url' => route('borrowings.index', ['status' => 'extension_requested'])],
+            ['label' => 'Terlambat', 'icon' => 'solar:danger-triangle-linear', 'fallback' => '!', 'count' => $overdueBorrowings, 'description' => 'Segera hubungi anggota yang melewati jatuh tempo.', 'url' => route('borrowings.index', ['status' => 'overdue'])],
         ]);
 
         return view('dashboard', compact('totalBooks', 'totalCategories', 'totalMembers', 'totalUsers', 'activeBorrowings', 'returnedBorrowings', 'overdueBorrowings', 'totalFines', 'recentBorrowings', 'weeklyStats', 'circulationPeriodLabel', 'circulationChartMaximum', 'popularBooks', 'activeMembers', 'actionItems'));

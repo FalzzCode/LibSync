@@ -7,6 +7,14 @@ use Illuminate\Validation\Rule;
 
 class UserRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => trim((string) $this->input('name')),
+            'email' => strtolower(trim((string) $this->input('email'))),
+        ]);
+    }
+
     public function authorize(): bool
     {
         // User management is an admin-only operation. Keep this guard here
@@ -33,10 +41,10 @@ class UserRequest extends FormRequest
         return [
             'name.required' => 'Nama wajib diisi.',
             'email.required' => 'Email wajib diisi.',
-            'email.unique' => 'Email sudah digunakan user lain.',
+            'email.unique' => 'Email sudah digunakan akun lain.',
             'password.required' => 'Password wajib diisi.',
             'password.min' => 'Password minimal 8 karakter.',
-            'role.required' => 'Role wajib dipilih.',
+            'role.required' => 'Peran wajib dipilih.',
         ];
     }
 }

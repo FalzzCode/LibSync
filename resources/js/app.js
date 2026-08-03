@@ -1,7 +1,7 @@
 import './bootstrap';
 
 const solarGlyphs = {
-    'Rp': 'solar:wallet-money-linear', '\u2318': 'solar:code-square-linear', '\u2699': 'solar:settings-linear', '\u2699\uFE0F': 'solar:settings-linear', '\u2190': 'solar:arrow-left-linear', '\u231B': 'solar:clock-circle-linear', '\u21A9': 'solar:alt-arrow-left-linear',
+    'Rp': 'solar:wallet-money-linear', '\u2318': 'solar:code-square-linear', '\u2699': 'solar:settings-linear', '\u2699\uFE0F': 'solar:settings-linear', '\u2190': 'solar:arrow-left-linear', '\u231B': 'solar:clock-circle-linear', '\u21A9': 'solar:alt-arrow-left-linear', '⌛': 'solar:clock-circle-linear', '↩': 'solar:alt-arrow-left-linear',
     '⌂': 'solar:home-2-linear', '▤': 'solar:book-2-linear', '▦': 'solar:widget-5-linear',
     '↺': 'solar:refresh-circle-linear', '↻': 'solar:refresh-circle-linear', '!': 'solar:danger-triangle-linear',
     '#': 'solar:hashtag-linear', '♙': 'solar:users-group-rounded-linear', '◇': 'solar:widget-5-linear',
@@ -22,6 +22,14 @@ const createSolarIcon = (icon) => {
     return element;
 };
 
+const markIconContainer = (element) => {
+    // Keep buttons and links in the accessibility tree. Their aria-label is
+    // the accessible name; only the decorative Solar glyph should be hidden.
+    if (!element.matches('a, button, [role="button"]')) {
+        element.setAttribute('aria-hidden', 'true');
+    }
+};
+
 const replaceSolarIcons = (root = document) => {
     // Keep the readable glyph fallback until Iconify has registered its custom element.
     if (!isIconifyReady()) return;
@@ -35,7 +43,7 @@ const replaceSolarIcons = (root = document) => {
         if (element.querySelector('iconify-icon')) return;
         const icon = element.dataset.solarIcon;
         if (!icon) return;
-        element.setAttribute('aria-hidden', 'true');
+        markIconContainer(element);
         element.replaceChildren(createSolarIcon(icon));
     });
 
@@ -46,7 +54,7 @@ const replaceSolarIcons = (root = document) => {
         const glyph = element.textContent.trim();
         const icon = element.dataset.solarIcon || solarGlyphs[glyph];
         if (!icon || element.querySelector('iconify-icon')) return;
-        element.setAttribute('aria-hidden', 'true');
+        markIconContainer(element);
         element.replaceChildren(createSolarIcon(icon));
     });
 
@@ -117,6 +125,27 @@ document.addEventListener('DOMContentLoaded', () => {
             else form?.submit();
         });
         syncClearButton();
+    });
+    document.querySelectorAll('[data-import-file-picker]').forEach((picker) => {
+        const input = picker.querySelector('input[type="file"]');
+        const fileName = picker.querySelector('[data-import-file-name]');
+        const fileStatus = picker.querySelector('[data-import-file-status]');
+        if (!input || !fileName || !fileStatus) return;
+
+        input.addEventListener('change', () => {
+            const file = input.files?.[0];
+            if (!file) {
+                fileName.textContent = 'Pilih file CSV';
+                fileStatus.textContent = 'Belum ada file dipilih';
+                picker.classList.remove('has-file');
+                return;
+            }
+
+            const sizeInMb = file.size / (1024 * 1024);
+            fileName.textContent = file.name;
+            fileStatus.textContent = `${sizeInMb.toFixed(2)} MB · siap diunggah`;
+            picker.classList.add('has-file');
+        });
     });
     new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) replaceSolarIcons(node);

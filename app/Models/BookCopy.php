@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BookCopy extends Model
 {
+    protected $table = 'salinan_buku';
+
     protected $fillable = ['book_id', 'inventory_code', 'barcode', 'condition', 'status', 'acquired_at', 'note'];
 
     protected function casts(): array

@@ -40,7 +40,7 @@ class StudentPortalTest extends TestCase
 
         $member = Member::where('nis', '2026001')->firstOrFail();
         $this->assertNotNull($member->user_id);
-        $this->assertDatabaseHas('users', ['id' => $member->user_id, 'email' => 'anggota@example.test', 'role' => 'student']);
+        $this->assertDatabaseHas('pengguna', ['id' => $member->user_id, 'email' => 'anggota@example.test', 'role' => 'student']);
     }
 
     public function test_petugas_dapat_menyimpan_anggota_tanpa_akun_portal(): void
@@ -52,7 +52,7 @@ class StudentPortalTest extends TestCase
             'phone' => '08123456787',
         ])->assertRedirect(route('members.index'));
 
-        $this->assertDatabaseHas('members', ['name' => 'Anggota Tanpa Akun', 'phone' => '08123456787']);
+        $this->assertDatabaseHas('anggota', ['name' => 'Anggota Tanpa Akun', 'phone' => '08123456787']);
     }
 
     public function test_petugas_dapat_mengatur_ulang_password_akun_siswa_dari_data_anggota(): void
@@ -92,7 +92,7 @@ class StudentPortalTest extends TestCase
 
         $this->actingAs($staff)->post(route('borrowings.return', $borrowing), ['returned_at' => today()->toDateString()])->assertRedirect();
 
-        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id, 'status' => 'ready']);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $reservation->id, 'status' => 'ready']);
         $this->assertDatabaseHas('notifications', ['notifiable_id' => $student->id]);
     }
 
@@ -104,7 +104,7 @@ class StudentPortalTest extends TestCase
 
         $this->actingAs($student)->post(route('student.reservations.store', $book))->assertRedirect();
 
-        $this->assertDatabaseHas('book_reservations', ['book_id' => $book->id, 'member_id' => $member->id, 'status' => 'waiting', 'queue_position' => 1]);
+        $this->assertDatabaseHas('reservasi_buku', ['book_id' => $book->id, 'member_id' => $member->id, 'status' => 'waiting', 'queue_position' => 1]);
     }
 
     public function test_siswa_tidak_bisa_menambahkan_buku_yang_masih_tersedia_ke_daftar_tunggu(): void
@@ -116,7 +116,7 @@ class StudentPortalTest extends TestCase
         $this->actingAs($student)->from(route('student.catalog'))->post(route('student.reservations.store', $book))
             ->assertRedirect(route('student.catalog'));
 
-        $this->assertDatabaseCount('book_reservations', 0);
+        $this->assertDatabaseCount('reservasi_buku', 0);
     }
 
     public function test_siswa_dengan_denda_belum_lunas_tidak_bisa_mengajukan_peminjaman(): void
@@ -130,7 +130,7 @@ class StudentPortalTest extends TestCase
             ->assertRedirect(route('student.catalog'))
             ->assertSessionHasErrors('member_id');
 
-        $this->assertDatabaseCount('borrowings', 0);
+        $this->assertDatabaseCount('peminjaman', 0);
     }
 
     public function test_hanya_admin_dapat_mengunduh_snapshot_backup(): void

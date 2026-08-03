@@ -20,9 +20,9 @@ class DeveloperPanelTest extends TestCase
             ->assertSessionHas('success');
 
         $student = User::where('email', 'developer.student@libsync.test')->firstOrFail();
-        $this->assertDatabaseHas('users', ['email' => 'developer.admin@libsync.test', 'role' => 'admin']);
-        $this->assertDatabaseHas('users', ['email' => 'developer.staff@libsync.test', 'role' => 'staff']);
-        $this->assertDatabaseHas('members', ['user_id' => $student->id, 'nis' => 'DEV-STUDENT-001']);
+        $this->assertDatabaseHas('pengguna', ['email' => 'developer.admin@libsync.test', 'role' => 'admin']);
+        $this->assertDatabaseHas('pengguna', ['email' => 'developer.staff@libsync.test', 'role' => 'staff']);
+        $this->assertDatabaseHas('anggota', ['user_id' => $student->id, 'nis' => 'DEV-STUDENT-001']);
 
         $this->post(route('developer.switch-role'), ['role' => 'student'])
             ->assertRedirect(route('student.dashboard'))

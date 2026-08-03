@@ -19,7 +19,7 @@ class MemberAccountCleanupTest extends TestCase
 
         $this->actingAs($staff)->delete(route('members.destroy', $member))->assertRedirect(route('members.index'));
 
-        $this->assertSoftDeleted('members', ['id' => $member->id]);
-        $this->assertDatabaseMissing('users', ['id' => $student->id]);
+        $this->assertSoftDeleted('anggota', ['id' => $member->id]);
+        $this->assertDatabaseMissing('pengguna', ['id' => $student->id]);
     }
 }

@@ -22,7 +22,7 @@ class UserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($userId)],
+            'email' => ['required', 'email', Rule::unique('pengguna', 'email')->ignore($userId)],
             'password' => [$isCreate ? 'required' : 'nullable', 'string', 'min:8'],
             'role' => ['required', 'in:admin,staff'],
         ];

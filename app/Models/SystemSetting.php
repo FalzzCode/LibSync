@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class SystemSetting extends Model
 {
+    protected $table = 'pengaturan_sistem';
+
     protected $fillable = ['key', 'value'];
 
     public static function value(string $key, mixed $default = null): mixed

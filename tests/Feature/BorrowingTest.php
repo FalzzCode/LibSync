@@ -39,7 +39,7 @@ class BorrowingTest extends TestCase
             'borrowed_at' => '2026-07-01', 'due_date' => '2026-07-08',
         ])->assertRedirect(route('borrowings.index'));
 
-        $this->assertDatabaseHas('borrowings', ['member_id' => $member->id, 'book_id' => $book->id, 'user_id' => $user->id, 'status' => 'borrowed']);
+        $this->assertDatabaseHas('peminjaman', ['member_id' => $member->id, 'book_id' => $book->id, 'user_id' => $user->id, 'status' => 'borrowed']);
         $this->assertSame(2, $book->fresh()->stock);
     }
 
@@ -53,7 +53,7 @@ class BorrowingTest extends TestCase
             'borrowed_at' => '2026-07-01', 'due_date' => '2026-07-08',
         ])->assertRedirect(route('borrowings.create'))->assertSessionHasErrors('book_id');
 
-        $this->assertDatabaseCount('borrowings', 0);
+        $this->assertDatabaseCount('peminjaman', 0);
         $this->assertSame(0, $book->fresh()->stock);
     }
 
@@ -68,7 +68,7 @@ class BorrowingTest extends TestCase
             'borrowed_at' => '2026-07-01', 'due_date' => '2026-07-08',
         ])->assertRedirect(route('borrowings.create'))->assertSessionHasErrors('book_id');
 
-        $this->assertDatabaseCount('borrowings', 0);
+        $this->assertDatabaseCount('peminjaman', 0);
         $this->assertSame(3, $book->fresh()->stock);
     }
 
@@ -91,15 +91,15 @@ class BorrowingTest extends TestCase
             'borrowed_at' => '2026-07-01', 'due_date' => '2026-07-08',
         ])->assertRedirect(route('borrowings.create'))->assertSessionHasErrors('book_id');
 
-        $this->assertDatabaseCount('borrowings', 0);
-        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id, 'status' => 'ready']);
+        $this->assertDatabaseCount('peminjaman', 0);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $reservation->id, 'status' => 'ready']);
 
         $this->actingAs($staff)->post(route('borrowings.store'), [
             'member_id' => $priorityMember->id, 'book_id' => $book->id,
             'borrowed_at' => '2026-07-01', 'due_date' => '2026-07-08',
         ])->assertRedirect(route('borrowings.index'));
 
-        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id, 'status' => 'fulfilled']);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $reservation->id, 'status' => 'fulfilled']);
         $this->assertSame(0, $book->fresh()->stock);
     }
 
@@ -117,8 +117,8 @@ class BorrowingTest extends TestCase
             'borrowed_at' => '2026-07-01', 'due_date' => '2026-07-08',
         ])->assertRedirect(route('borrowings.index'));
 
-        $this->assertDatabaseHas('book_reservations', ['id' => $firstReservation->id, 'status' => 'ready']);
-        $this->assertDatabaseHas('book_reservations', ['id' => $secondReservation->id, 'status' => 'fulfilled']);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $firstReservation->id, 'status' => 'ready']);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $secondReservation->id, 'status' => 'fulfilled']);
         $this->assertSame(1, $book->fresh()->stock);
     }
 
@@ -132,7 +132,7 @@ class BorrowingTest extends TestCase
         $this->actingAs($user)->post(route('borrowings.return', $borrowing), ['returned_at' => '2026-07-11'])
             ->assertRedirect(route('borrowings.show', $borrowing));
 
-        $this->assertDatabaseHas('borrowings', ['id' => $borrowing->id, 'status' => 'returned', 'fine' => 3000, 'returned_at' => '2026-07-11 00:00:00']);
+        $this->assertDatabaseHas('peminjaman', ['id' => $borrowing->id, 'status' => 'returned', 'fine' => 3000, 'returned_at' => '2026-07-11 00:00:00']);
         $this->assertSame(2, $book->fresh()->stock);
     }
 
@@ -164,8 +164,8 @@ class BorrowingTest extends TestCase
             'borrowed_at' => '2026-07-01', 'due_date' => '2026-07-08',
         ])->assertRedirect(route('borrowings.create'))->assertSessionHasErrors('member_id');
 
-        $this->assertDatabaseHas('members', ['id' => $member->id, 'account_status' => 'blocked', 'block_type' => 'automatic']);
-        $this->assertDatabaseHas('warnings', ['member_id' => $member->id, 'type' => 'loan_limit']);
+        $this->assertDatabaseHas('anggota', ['id' => $member->id, 'account_status' => 'blocked', 'block_type' => 'automatic']);
+        $this->assertDatabaseHas('peringatan', ['member_id' => $member->id, 'type' => 'loan_limit']);
         $this->assertSame(3, Borrowing::where('member_id', $member->id)->count());
     }
 
@@ -196,7 +196,7 @@ class BorrowingTest extends TestCase
             'returned_at' => today()->toDateString(),
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('members', [
+        $this->assertDatabaseHas('anggota', [
             'id' => $member->id,
             'account_status' => 'normal',
             'block_type' => null,
@@ -231,7 +231,7 @@ class BorrowingTest extends TestCase
             ->assertRedirect(route('borrowings.index'))
             ->assertSessionHas('error');
 
-        $this->assertDatabaseHas('borrowings', [
+        $this->assertDatabaseHas('peminjaman', [
             'id' => $request->id,
             'status' => 'rejected',
         ]);

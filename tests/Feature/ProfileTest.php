@@ -25,7 +25,7 @@ class ProfileTest extends TestCase
             ])
             ->assertSessionHas('success');
 
-        $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'Nama Baru', 'email' => 'baru@example.test']);
+        $this->assertDatabaseHas('pengguna', ['id' => $user->id, 'name' => 'Nama Baru', 'email' => 'baru@example.test']);
     }
 
     public function test_student_profile_changes_are_reflected_in_the_linked_member_record(): void
@@ -45,8 +45,8 @@ class ProfileTest extends TestCase
             ])
             ->assertSessionHas('success');
 
-        $this->assertDatabaseHas('users', ['id' => $student->id, 'name' => 'Nama Siswa Baru', 'email' => 'siswa-baru@example.test']);
-        $this->assertDatabaseHas('members', ['id' => $member->id, 'name' => 'Nama Siswa Baru', 'email' => 'siswa-baru@example.test']);
+        $this->assertDatabaseHas('pengguna', ['id' => $student->id, 'name' => 'Nama Siswa Baru', 'email' => 'siswa-baru@example.test']);
+        $this->assertDatabaseHas('anggota', ['id' => $member->id, 'name' => 'Nama Siswa Baru', 'email' => 'siswa-baru@example.test']);
     }
 
     public function test_user_can_change_password_with_current_password(): void

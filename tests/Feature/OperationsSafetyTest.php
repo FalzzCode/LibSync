@@ -40,8 +40,8 @@ class OperationsSafetyTest extends TestCase
             'amount' => 2000, 'method' => 'cash',
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('fines', ['id' => $fine->id, 'paid_amount' => 2000, 'status' => 'partial']);
-        $this->assertDatabaseHas('fine_payments', ['fine_id' => $fine->id, 'amount' => 2000, 'received_by' => $staff->id]);
+        $this->assertDatabaseHas('denda', ['id' => $fine->id, 'paid_amount' => 2000, 'status' => 'partial']);
+        $this->assertDatabaseHas('pembayaran_denda', ['fine_id' => $fine->id, 'amount' => 2000, 'received_by' => $staff->id]);
 
         $this->actingAs($staff)->from(route('fines.index'))->post(route('fines.pay', $fine), [
             'amount' => 4000, 'method' => 'cash',
@@ -67,9 +67,9 @@ class OperationsSafetyTest extends TestCase
         $this->actingAs($staff)->from(route('books.index'))->delete(route('books.destroy', $book))
             ->assertRedirect(route('books.index'))->assertSessionHas('error');
 
-        $this->assertDatabaseHas('categories', ['id' => $book->category_id]);
-        $this->assertDatabaseHas('books', ['id' => $book->id]);
-        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id]);
+        $this->assertDatabaseHas('kategori', ['id' => $book->category_id]);
+        $this->assertDatabaseHas('buku', ['id' => $book->id]);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $reservation->id]);
     }
 
     public function test_anggota_dengan_antrean_buku_tidak_dapat_dihapus(): void
@@ -89,8 +89,8 @@ class OperationsSafetyTest extends TestCase
             ->assertRedirect(route('members.index'))
             ->assertSessionHas('error');
 
-        $this->assertDatabaseHas('members', ['id' => $member->id]);
-        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id]);
+        $this->assertDatabaseHas('anggota', ['id' => $member->id]);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $reservation->id]);
     }
 
     public function test_kode_eksemplar_harus_unik(): void
@@ -110,7 +110,7 @@ class OperationsSafetyTest extends TestCase
             'condition' => 'good',
         ])->assertRedirect(route('book-copies.index'))->assertSessionHasErrors('inventory_code');
 
-        $this->assertDatabaseCount('book_copies', 1);
+        $this->assertDatabaseCount('salinan_buku', 1);
     }
 
     public function test_kode_koleksi_buku_tidak_boleh_berulang(): void

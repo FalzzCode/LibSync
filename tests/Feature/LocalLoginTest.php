@@ -93,7 +93,7 @@ class LocalLoginTest extends TestCase
             'account_password' => 'password123',
         ])->assertRedirect(route('members.create'))->assertSessionHasErrors('account_email');
 
-        $this->assertDatabaseMissing('users', ['email' => 'siswa@example.test']);
-        $this->assertDatabaseMissing('members', ['name' => 'Siswa Produksi']);
+        $this->assertDatabaseMissing('pengguna', ['email' => 'siswa@example.test']);
+        $this->assertDatabaseMissing('anggota', ['name' => 'Siswa Produksi']);
     }
 }

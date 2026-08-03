@@ -42,8 +42,8 @@ class ScheduledLibraryTasksTest extends TestCase
         $this->artisan('library:check-overdues')->assertExitCode(0);
         $this->artisan('library:check-overdues')->assertExitCode(0);
 
-        $this->assertDatabaseCount('warnings', 1);
-        $this->assertDatabaseHas('warnings', ['member_id' => $member->id, 'type' => 'overdue']);
+        $this->assertDatabaseCount('peringatan', 1);
+        $this->assertDatabaseHas('peringatan', ['member_id' => $member->id, 'type' => 'overdue']);
     }
 
     public function test_reservasi_kedaluwarsa_dialihkan_ke_antrean_berikutnya(): void
@@ -68,8 +68,8 @@ class ScheduledLibraryTasksTest extends TestCase
 
         $this->artisan('library:process-reservations')->assertExitCode(0);
 
-        $this->assertDatabaseHas('book_reservations', ['id' => $expired->id, 'status' => 'expired']);
-        $this->assertDatabaseHas('book_reservations', ['id' => $next->id, 'status' => 'ready']);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $expired->id, 'status' => 'expired']);
+        $this->assertDatabaseHas('reservasi_buku', ['id' => $next->id, 'status' => 'ready']);
         $this->assertDatabaseHas('notifications', ['notifiable_id' => $nextUser->id]);
     }
 }

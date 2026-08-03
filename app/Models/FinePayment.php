@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FinePayment extends Model
 {
+    protected $table = 'pembayaran_denda';
+
     protected $fillable = ['fine_id', 'amount', 'method', 'note', 'received_by', 'paid_at'];
 
     protected function casts(): array

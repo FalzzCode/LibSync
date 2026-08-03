@@ -22,8 +22,8 @@ class ImportValidationTest extends TestCase
             'file' => $csv,
         ])->assertRedirect(route('imports.create'));
 
-        $this->assertDatabaseCount('books', 0);
-        $this->assertDatabaseMissing('books', ['title' => 'Buku Rusak']);
+        $this->assertDatabaseCount('buku', 0);
+        $this->assertDatabaseMissing('buku', ['title' => 'Buku Rusak']);
     }
 
     public function test_impor_anggota_memperbarui_nis_yang_sudah_ada_tanpa_menghapus_email_lama(): void
@@ -43,8 +43,8 @@ class ImportValidationTest extends TestCase
             'file' => $csv,
         ])->assertRedirect(route('imports.create'));
 
-        $this->assertDatabaseCount('members', 1);
-        $this->assertDatabaseHas('members', [
+        $this->assertDatabaseCount('anggota', 1);
+        $this->assertDatabaseHas('anggota', [
             'id' => $member->id,
             'name' => 'Nama Baru',
             'class' => 'XI',
@@ -62,7 +62,7 @@ class ImportValidationTest extends TestCase
             'file' => $csv,
         ])->assertRedirect(route('imports.create'))->assertSessionHas('success');
 
-        $this->assertDatabaseHas('members', [
+        $this->assertDatabaseHas('anggota', [
             'name' => 'Siswa Indonesia',
             'phone' => '08123456776',
             'email' => 'siswa@example.test',
@@ -83,8 +83,8 @@ class ImportValidationTest extends TestCase
             'file' => $csv,
         ])->assertRedirect(route('imports.create'))->assertSessionHas('error', 'File CSV terlalu besar. Maksimal 10.000 baris per impor.');
 
-        $this->assertDatabaseCount('books', 0);
-        $this->assertDatabaseCount('categories', 0);
+        $this->assertDatabaseCount('buku', 0);
+        $this->assertDatabaseCount('kategori', 0);
     }
 
     public function test_impor_anggota_tidak_mewajibkan_nomor_telepon(): void
@@ -97,7 +97,7 @@ class ImportValidationTest extends TestCase
             'file' => $csv,
         ])->assertRedirect(route('imports.create'))->assertSessionHas('success');
 
-        $this->assertDatabaseHas('members', [
+        $this->assertDatabaseHas('anggota', [
             'name' => 'Siswa Tanpa Telepon',
             'email' => 'siswa2@example.test',
             'phone' => null,

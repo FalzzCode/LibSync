@@ -34,7 +34,7 @@ class DiagnoseOAuth extends Command
         try {
             DB::connection()->getPdo();
             $checks[] = ['Koneksi database', 'OK', DB::connection()->getDatabaseName()];
-            $checks[] = ['Kolom OAuth users', Schema::hasColumns('users', ['email', 'google_id', 'avatar_url']) ? 'OK' : 'GAGAL', 'email, google_id, avatar_url'];
+            $checks[] = ['Kolom OAuth pengguna', Schema::hasColumns('pengguna', ['email', 'google_id', 'avatar_url']) ? 'OK' : 'GAGAL', 'email, google_id, avatar_url'];
             $checks[] = ['Tabel sessions', Schema::hasTable('sessions') ? 'OK' : 'GAGAL', 'sessions'];
         } catch (\Throwable $exception) {
             $checks[] = ['Koneksi database', 'GAGAL', $exception->getMessage()];

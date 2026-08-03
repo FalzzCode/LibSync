@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Fine extends Model
 {
+    protected $table = 'denda';
+
     protected $fillable = ['member_id', 'borrowing_id', 'type', 'amount', 'paid_amount', 'status', 'note', 'created_by'];
 
     protected function casts(): array

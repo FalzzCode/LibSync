@@ -12,6 +12,8 @@ class Member extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'anggota';
+
     protected $fillable = [
         'name',
         'class',

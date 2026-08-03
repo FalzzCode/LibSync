@@ -12,6 +12,8 @@ class Borrowing extends Model
 {
     use HasFactory;
 
+    protected $table = 'peminjaman';
+
     protected $fillable = ['member_id', 'book_id', 'user_id', 'borrowed_at', 'due_date', 'returned_at', 'requested_at', 'approved_at', 'return_requested_at', 'extension_requested_at', 'extension_reason', 'extension_count', 'rejected_at', 'rejected_reason', 'status', 'fine'];
 
     protected function casts(): array

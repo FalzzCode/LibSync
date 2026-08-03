@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Warning extends Model
 {
+    protected $table = 'peringatan';
+
     protected $fillable = ['member_id', 'borrowing_id', 'type', 'level', 'title', 'message', 'read_at', 'resolved_at', 'resolution_note'];
 
     protected function casts(): array

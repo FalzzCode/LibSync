@@ -20,11 +20,11 @@ class BookRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'author' => ['required', 'string', 'max:255'],
-            'book_code' => ['nullable', 'string', 'max:100', Rule::unique('books', 'book_code')->ignore($this->route('book'))],
+            'book_code' => ['nullable', 'string', 'max:100', Rule::unique('buku', 'book_code')->ignore($this->route('book'))],
             'isbn' => ['nullable', 'string', 'max:30'],
             'publisher' => ['nullable', 'string', 'max:255'],
             'publication_year' => ['nullable', 'digits:4', 'integer', 'between:1000,'.now()->year],
-            'category_id' => ['required', 'exists:categories,id'],
+            'category_id' => ['required', 'exists:kategori,id'],
             'stock' => ['required', 'integer', 'min:0'],
             'shelf' => ['nullable', 'string', 'max:100'],
             'language' => ['nullable', 'string', 'max:50'],

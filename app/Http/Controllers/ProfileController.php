@@ -25,12 +25,12 @@ class ProfileController extends Controller
         $linkedMember = $user->member;
         $rules = [
             'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'email' => ['required', 'email', 'max:255', Rule::unique('pengguna', 'email')->ignore($user->id)],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
 
         if ($user->role === 'student' && $linkedMember) {
-            $rules['email'][] = Rule::unique('members', 'email')->ignore($linkedMember->id);
+            $rules['email'][] = Rule::unique('anggota', 'email')->ignore($linkedMember->id);
         }
 
         $data = $request->validate($rules);

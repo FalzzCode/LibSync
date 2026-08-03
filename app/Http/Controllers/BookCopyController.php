@@ -32,9 +32,9 @@ class BookCopyController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'book_id' => ['required', 'exists:books,id'],
-            'inventory_code' => ['required', 'string', 'max:100', 'unique:book_copies,inventory_code'],
-            'barcode' => ['nullable', 'string', 'max:100', 'unique:book_copies,barcode'],
+            'book_id' => ['required', 'exists:buku,id'],
+            'inventory_code' => ['required', 'string', 'max:100', 'unique:salinan_buku,inventory_code'],
+            'barcode' => ['nullable', 'string', 'max:100', 'unique:salinan_buku,barcode'],
             'condition' => ['required', 'in:good,minor_damage,damaged'],
             'note' => ['nullable', 'string', 'max:1000'],
         ]);

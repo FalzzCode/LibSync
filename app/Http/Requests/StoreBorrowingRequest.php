@@ -14,8 +14,8 @@ class StoreBorrowingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'member_id' => ['required', 'exists:members,id'],
-            'book_id' => ['required', 'exists:books,id'],
+            'member_id' => ['required', 'exists:anggota,id'],
+            'book_id' => ['required', 'exists:buku,id'],
             'borrowed_at' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:borrowed_at'],
         ];

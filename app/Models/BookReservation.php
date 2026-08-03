@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BookReservation extends Model
 {
+    protected $table = 'reservasi_buku';
+
     protected $fillable = ['book_id', 'member_id', 'status', 'queue_position', 'expires_at', 'fulfilled_at'];
 
     protected function casts(): array

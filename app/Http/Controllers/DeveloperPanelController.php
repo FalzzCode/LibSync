@@ -33,7 +33,7 @@ class DeveloperPanelController extends Controller
 
         $testUsers = User::query()->whereIn('email', $this->testAccountEmails())->get()->keyBy('role');
 
-        return view('developer.index', ['migrationStatus' => trim(Artisan::output()), 'log' => $log, 'testUsers' => $testUsers, 'checks' => ['Koneksi database' => config('database.default'), 'Tabel members' => Schema::hasTable('members') ? 'Siap' : 'Belum ada', 'Tabel borrowings' => Schema::hasTable('borrowings') ? 'Siap' : 'Belum ada', 'Storage publik' => file_exists(public_path('storage')) ? 'Siap' : 'Perlu dibuat']]);
+        return view('developer.index', ['migrationStatus' => trim(Artisan::output()), 'log' => $log, 'testUsers' => $testUsers, 'checks' => ['Koneksi database' => config('database.default'), 'Tabel anggota' => Schema::hasTable('anggota') ? 'Siap' : 'Belum ada', 'Tabel peminjaman' => Schema::hasTable('peminjaman') ? 'Siap' : 'Belum ada', 'Storage publik' => file_exists(public_path('storage')) ? 'Siap' : 'Perlu dibuat']]);
     }
 
     public function seedDemo(): RedirectResponse

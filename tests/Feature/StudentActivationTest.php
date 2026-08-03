@@ -65,13 +65,13 @@ class StudentActivationTest extends TestCase
             ->assertRedirect(route('student.dashboard'))
             ->assertSessionHas('success');
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('pengguna', [
             'name' => 'Siswa Google',
             'email' => 'siswa.google@example.test',
             'role' => 'student',
             'google_id' => 'google-student-10',
         ]);
-        $this->assertDatabaseHas('members', [
+        $this->assertDatabaseHas('anggota', [
             'id' => $member->id,
             'email' => 'siswa.google@example.test',
             'activation_code_hash' => null,

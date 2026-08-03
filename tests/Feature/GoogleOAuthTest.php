@@ -79,7 +79,7 @@ class GoogleOAuthTest extends TestCase
             ->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($staff);
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('pengguna', [
             'id' => $staff->id,
             'google_id' => 'google-staff-1',
         ]);
@@ -108,11 +108,11 @@ class GoogleOAuthTest extends TestCase
         $user = User::where('email', 'siswa.baru@example.test')->firstOrFail();
         $this->assertAuthenticatedAs($user);
         $this->assertSame('student', $user->role);
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('pengguna', [
             'id' => $user->id,
             'google_id' => 'google-new-student-1',
         ]);
-        $this->assertDatabaseHas('members', [
+        $this->assertDatabaseHas('anggota', [
             'user_id' => $user->id,
             'name' => 'Siswa Baru',
             'email' => 'siswa.baru@example.test',
@@ -142,12 +142,12 @@ class GoogleOAuthTest extends TestCase
             ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
             ->assertRedirect(route('student.dashboard'));
 
-        $this->assertDatabaseHas('members', [
+        $this->assertDatabaseHas('anggota', [
             'id' => $member->id,
             'user_id' => User::where('email', 'anggota@example.test')->value('id'),
         ]);
         $this->assertNotNull($member->fresh()->activated_at);
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('pengguna', [
             'email' => 'anggota@example.test',
             'role' => 'student',
             'google_id' => 'google-member-1',
@@ -171,7 +171,7 @@ class GoogleOAuthTest extends TestCase
             ->assertRedirect(route('login'))
             ->assertSessionHasErrors('email', 'Pendaftaran otomatis sedang dimatikan. Minta petugas menghubungkan akun Google Anda.');
 
-        $this->assertDatabaseMissing('users', ['email' => 'belum-terdaftar@example.test']);
+        $this->assertDatabaseMissing('pengguna', ['email' => 'belum-terdaftar@example.test']);
     }
 
     public function test_google_callback_returns_to_login_when_the_provider_fails(): void

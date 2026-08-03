@@ -18,7 +18,7 @@
         <div class="search-field">
             <label class="sr-only" for="memberSearch">Cari anggota</label>
             <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span>
-            <input id="memberSearch" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email, kelas, atau telepon…" spellcheck="false">
+            <input id="memberSearch" type="search" name="search" value="{{ $search }}" maxlength="120" placeholder="Cari nama, email, kelas, atau telepon…" spellcheck="false">
             <button class="search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         </div>
         <div class="filter-bar__controls">
@@ -73,7 +73,7 @@
                                     <a class="icon-button" href="{{ route('members.edit', $member) }}" aria-label="Edit {{ $member->name }}">✎</a>
                                     <form class="inline-form js-confirm-delete" data-name="{{ $member->name }}" method="POST" action="{{ route('members.destroy', $member) }}">
                                         @csrf @method('DELETE')
-                                        <button class="icon-button icon-button--danger" aria-label="Hapus {{ $member->name }}">×</button>
+                                        <button type="submit" class="icon-button icon-button--danger" aria-label="Hapus {{ $member->name }}">×</button>
                                     </form>
                                 </div>
                             </td>

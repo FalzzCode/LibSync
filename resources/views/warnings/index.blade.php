@@ -17,7 +17,7 @@
         <div class="search-field">
             <label class="sr-only" for="warningSearch">Cari peringatan</label>
             <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span>
-            <input id="warningSearch" type="search" name="search" value="{{ request('search') }}" placeholder="Cari judul, anggota, atau buku…" spellcheck="false">
+            <input id="warningSearch" type="search" name="search" value="{{ request('search') }}" maxlength="120" placeholder="Cari judul, anggota, atau buku…" spellcheck="false">
             <button class="search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         </div>
         <div class="filter-bar__controls">

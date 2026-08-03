@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BookRequest;
 use App\Models\Book;
 use App\Models\Category;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -78,12 +79,23 @@ class BookController extends Controller
     public function store(BookRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $newCover = null;
 
         if ($request->hasFile('cover_image')) {
-            $data['cover_image'] = $request->file('cover_image')->store('books', 'public');
+            $newCover = $request->file('cover_image')->store('books', 'public');
+            $data['cover_image'] = $newCover;
         }
 
-        Book::create($data);
+        try {
+            $book = Book::create($data);
+        } catch (Throwable $exception) {
+            if ($newCover) {
+                Storage::disk('public')->delete($newCover);
+            }
+
+            throw $exception;
+        }
+        ActivityLogger::write('create', 'book', $book, null, $book->toArray());
 
         return redirect()->route('books.index')->with('success', 'Buku berhasil ditambahkan.');
     }
@@ -111,6 +123,7 @@ class BookController extends Controller
             $data['cover_image'] = $newCover;
         }
 
+        $before = $book->toArray();
         try {
             $book->update($data);
         } catch (Throwable $exception) {
@@ -124,6 +137,7 @@ class BookController extends Controller
         if ($newCover && $previousCover && $previousCover !== $newCover) {
             Storage::disk('public')->delete($previousCover);
         }
+        ActivityLogger::write('update', 'book', $book, $before, $book->fresh()->toArray());
 
         return redirect()->route('books.index')->with('success', 'Buku berhasil diperbarui.');
     }
@@ -139,11 +153,13 @@ class BookController extends Controller
             return back()->with('error', 'Buku tidak dapat dihapus karena masih memiliki data antrean. Arsipkan buku atau selesaikan antreannya terlebih dahulu.');
         }
 
+        $before = $book->toArray();
         if ($book->cover_image) {
             Storage::disk('public')->delete($book->cover_image);
         }
 
         $book->delete();
+        ActivityLogger::write('delete', 'book', $book, $before, null);
 
         return redirect()->route('books.index')->with('success', 'Buku berhasil dihapus.');
     }

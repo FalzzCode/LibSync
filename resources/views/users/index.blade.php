@@ -18,7 +18,7 @@
         <div class="search-field">
             <label class="sr-only" for="userSearch">Cari pengguna</label>
             <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span>
-            <input id="userSearch" type="search" name="search" value="{{ $search }}" placeholder="Cari nama, email, atau peran…" spellcheck="false">
+            <input id="userSearch" type="search" name="search" value="{{ $search }}" maxlength="120" placeholder="Cari nama, email, atau peran…" spellcheck="false">
             <button class="search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         </div>
         <div class="filter-bar__controls">
@@ -57,7 +57,7 @@
                                     @if($user->id !== auth()->id())
                                         <form class="inline-form js-confirm-delete" data-name="{{ $user->name }}" method="POST" action="{{ route('users.destroy', $user) }}">
                                             @csrf @method('DELETE')
-                                            <button class="icon-button icon-button--danger" aria-label="Hapus {{ $user->name }}">×</button>
+                                            <button type="submit" class="icon-button icon-button--danger" aria-label="Hapus {{ $user->name }}">×</button>
                                         </form>
                                     @endif
                                 </div>

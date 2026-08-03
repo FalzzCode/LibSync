@@ -31,11 +31,19 @@ Route::view('/offline', 'offline')->name('offline');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
-    Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
-    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1')
+        ->name('login.attempt');
+    Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])
+        ->middleware('throttle:10,1')
+        ->name('auth.google.redirect');
+    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])
+        ->middleware('throttle:20,1')
+        ->name('auth.google.callback');
     Route::get('/aktivasi-siswa', [StudentActivationController::class, 'create'])->name('student.activation.create');
-    Route::post('/aktivasi-siswa', [StudentActivationController::class, 'store'])->name('student.activation.store');
+    Route::post('/aktivasi-siswa', [StudentActivationController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('student.activation.store');
 });
 
 Route::middleware('auth')->group(function () {

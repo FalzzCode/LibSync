@@ -60,12 +60,21 @@ class BorrowingController extends Controller
     public function store(StoreBorrowingRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $member = Member::findOrFail($data['member_id']);
+        $standingFailure = null;
 
-        // Penolakan dan perubahan status akun harus tersimpan, bukan ikut rollback bersama transaksi pinjam.
-        MemberStanding::assertCanBorrow($member);
+        // Lock the member before checking the standing. This keeps concurrent
+        // staff/student requests from both passing the active-loan limit.
+        // A standing failure is caught so an automatic block/warning commits.
+        DB::transaction(function () use ($data, &$standingFailure) {
+            $member = Member::lockForUpdate()->findOrFail($data['member_id']);
+            try {
+                MemberStanding::assertCanBorrow($member);
+            } catch (ValidationException $exception) {
+                $standingFailure = $exception;
 
-        DB::transaction(function () use ($data) {
+                return;
+            }
+
             $book = Book::lockForUpdate()->findOrFail($data['book_id']);
             if ($book->archived_at) {
                 throw ValidationException::withMessages(['book_id' => 'Buku ini sudah diarsipkan dan tidak dapat dipinjam.']);
@@ -95,6 +104,10 @@ class BorrowingController extends Controller
             ActivityLogger::write('create', 'borrowing', $borrowing, null, $borrowing->toArray());
         });
 
+        if ($standingFailure) {
+            throw $standingFailure;
+        }
+
         return redirect()->route('borrowings.index')->with('success', 'Peminjaman berhasil dicatat dan stok buku diperbarui.');
     }
 
@@ -115,13 +128,16 @@ class BorrowingController extends Controller
         $approvalError = null;
 
         DB::transaction(function () use ($borrowing, $data, &$standingFailure, &$approvalError) {
+            // Keep the lock order member -> borrowing -> book, matching new
+            // loans and returns, so concurrent circulation actions do not
+            // deadlock while updating the same member and title.
+            $member = Member::lockForUpdate()->findOrFail($data['member_id']);
             $borrowing = Borrowing::lockForUpdate()->findOrFail($borrowing->id);
             if ($borrowing->status !== 'requested') {
                 $approvalError = 'Permintaan ini sudah diproses.';
 
                 return;
             }
-            $member = Member::lockForUpdate()->findOrFail($data['member_id']);
             try {
                 MemberStanding::assertCanBorrow($member);
             } catch (ValidationException $exception) {
@@ -182,8 +198,12 @@ class BorrowingController extends Controller
     public function returnBook(ReturnBorrowingRequest $request, Borrowing $borrowing): RedirectResponse
     {
         $returnedAt = $request->date('returned_at');
+        $memberId = $borrowing->member_id;
 
-        DB::transaction(function () use ($borrowing, $returnedAt) {
+        DB::transaction(function () use ($borrowing, $returnedAt, $memberId) {
+            // Keep the same member -> borrowing -> book order used by
+            // borrowing requests and approvals.
+            $member = Member::lockForUpdate()->findOrFail($memberId);
             $borrowing = Borrowing::lockForUpdate()->findOrFail($borrowing->id);
             if (! in_array($borrowing->status, ['borrowed', 'return_requested'])) {
                 throw ValidationException::withMessages(['returned_at' => 'Buku ini sudah dikembalikan sebelumnya.']);
@@ -215,7 +235,7 @@ class BorrowingController extends Controller
                 Fine::create(['member_id' => $borrowing->member_id, 'borrowing_id' => $borrowing->id, 'type' => 'late', 'amount' => $fine, 'created_by' => auth()->id(), 'note' => "Keterlambatan {$lateDays} hari."]);
                 Warning::create(['member_id' => $borrowing->member_id, 'borrowing_id' => $borrowing->id, 'type' => 'late_return', 'level' => 'warning', 'title' => 'Pengembalian terlambat', 'message' => 'Denda keterlambatan sebesar Rp'.number_format($fine, 0, ',', '.').'.']);
             }
-            MemberStanding::refresh(Member::lockForUpdate()->findOrFail($borrowing->member_id));
+            MemberStanding::refresh($member);
             ActivityLogger::write('return', 'borrowing', $borrowing, $before, $borrowing->fresh()->only(['returned_at', 'status', 'fine']));
         });
 

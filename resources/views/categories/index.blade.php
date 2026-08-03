@@ -18,7 +18,7 @@
         <div class="search-field">
             <label class="sr-only" for="categorySearch">Cari kategori</label>
             <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span>
-            <input id="categorySearch" type="search" name="search" value="{{ $search }}" placeholder="Cari nama kategori…" spellcheck="false">
+            <input id="categorySearch" type="search" name="search" value="{{ $search }}" maxlength="120" placeholder="Cari nama kategori…" spellcheck="false">
             <button class="search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         </div>
         <div class="filter-bar__controls">
@@ -42,7 +42,7 @@
                                     <a class="icon-button" href="{{ route('categories.edit', $category) }}" aria-label="Edit {{ $category->name }}"><span data-solar-icon="solar:pen-new-square-linear">✎</span></a>
                                     <form class="inline-form js-confirm-delete" data-name="{{ $category->name }}" method="POST" action="{{ route('categories.destroy', $category) }}">
                                         @csrf @method('DELETE')
-                                        <button class="icon-button icon-button--danger" aria-label="Hapus {{ $category->name }}"><span data-solar-icon="solar:trash-bin-trash-linear">×</span></button>
+                                        <button type="submit" class="icon-button icon-button--danger" aria-label="Hapus {{ $category->name }}"><span data-solar-icon="solar:trash-bin-trash-linear">×</span></button>
                                     </form>
                                 </div>
                             </td>

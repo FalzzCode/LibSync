@@ -18,13 +18,25 @@ class StudentBorrowingController extends Controller
     public function store(Book $book): RedirectResponse
     {
         $member = Member::where('user_id', auth()->id())->firstOrFail();
-        MemberStanding::assertCanBorrow($member);
+        $memberId = $member->id;
+        $standingFailure = null;
+        $borrowing = null;
 
         // Lock the member and book while checking the request. This keeps two
         // fast taps (or a student/admin action at the same time) from creating
         // duplicate requests or approving a book that has just become held.
-        $borrowing = DB::transaction(function () use ($book, $member): Borrowing {
-            $member = Member::lockForUpdate()->findOrFail($member->id);
+        $borrowing = DB::transaction(function () use ($book, $memberId, &$standingFailure): ?Borrowing {
+            $member = Member::lockForUpdate()->findOrFail($memberId);
+            try {
+                MemberStanding::assertCanBorrow($member);
+            } catch (ValidationException $exception) {
+                // Keep the automatic block and warning while returning the
+                // validation message to the student after the transaction.
+                $standingFailure = $exception;
+
+                return null;
+            }
+
             $book = Book::lockForUpdate()->findOrFail($book->id);
 
             if ($book->archived_at) {
@@ -56,6 +68,12 @@ class StudentBorrowingController extends Controller
                 'requested_at' => now(),
             ]);
         });
+        if ($standingFailure) {
+            throw $standingFailure;
+        }
+        if (! $borrowing) {
+            throw ValidationException::withMessages(['book' => 'Permintaan peminjaman tidak dapat diproses.']);
+        }
         ActivityLogger::write('request_borrowing', 'borrowing', $borrowing, null, $borrowing->toArray());
 
         return back()->with('success', 'Permintaan peminjaman dikirim. Tunggu persetujuan petugas.');

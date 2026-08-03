@@ -26,7 +26,7 @@ const replaceSolarIcons = (root = document) => {
     // Keep the readable glyph fallback until Iconify has registered its custom element.
     if (!isIconifyReady()) return;
 
-    const selector = '.sidebar__link > span, .header__menu-toggle, .header__profile > span:last-child, .mobile-tabbar span, .stat-card__icon, .stat-card > b, .quick-actions > a > span, .tip-card__icon, .activity-row__icon, .task-item__icon, .student-summary__icon, .empty-state > span, .search-field > span, .icon-button, .view-toggle__btn, .alert > span, .file-field__label > span, .profile-photo-field label > span, .metric-card__icon';
+    const selector = '.sidebar__link > span, .sidebar__close, .header__menu-toggle, .header__profile > span:last-child, .theme-toggle > span, .mobile-tabbar span, .stat-card__icon, .stat-card > b, .quick-actions > a > span, .tip-card__icon, .activity-row__icon, .task-item__icon, .student-summary__icon, .empty-state > span, .search-field > span, .icon-button, .view-toggle__btn, .alert > span, .file-field__label > span, .profile-photo-field label > span, .metric-card__icon';
     const explicitSelector = '[data-solar-icon]';
     const explicitElements = [];
     if (root.matches?.(explicitSelector)) explicitElements.push(root);

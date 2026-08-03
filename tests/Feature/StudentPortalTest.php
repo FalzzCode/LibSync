@@ -150,5 +150,6 @@ class StudentPortalTest extends TestCase
         $this->assertSame('ruang-baca-data-snapshot', $snapshot['format']);
         $this->assertArrayHasKey('users', $snapshot['data']);
         $this->assertStringNotContainsString('password', $body);
+        $this->assertStringNotContainsString('activation_code_hash', $body);
     }
 }

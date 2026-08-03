@@ -11,7 +11,7 @@
     </header>
     <form class="student-catalog-search" method="GET" role="search">
         <label class="sr-only" for="studentBookSearch">Cari buku</label>
-        <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span><input id="studentBookSearch" type="search" name="search" value="{{ $search }}" placeholder="Cari judul atau penulis…" autocomplete="off" spellcheck="false">
+        <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span><input id="studentBookSearch" type="search" name="search" value="{{ $search }}" maxlength="120" placeholder="Cari judul atau penulis…" autocomplete="off" spellcheck="false">
         <button class="student-catalog-search__clear search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         <button class="btn btn--primary" type="submit">Cari</button>
     </form>

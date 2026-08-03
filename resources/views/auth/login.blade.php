@@ -54,7 +54,7 @@
                     <span class="google-label">Lanjutkan dengan Google</span>
                     <span class="google-arrow" aria-hidden="true">&rarr;</span>
                 </a>
-                <p class="login__google-note">Cukup pilih akun Google; data anggota akan dibuat atau dihubungkan memakai alamat email Google.</p>
+                <p class="login__google-note"><strong>Tidak perlu NIS.</strong> Cukup pilih akun Google; data anggota akan dibuat atau dihubungkan memakai alamat email Google.</p>
 
                 @if ($showLocalLogin)
                     <div class="login__local-fallback">

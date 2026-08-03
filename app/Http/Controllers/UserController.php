@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +15,7 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $this->ensureAdmin();
-        $search = $request->string('search')->trim()->toString();
+        $search = $request->string('search')->trim()->substr(0, 120)->toString();
         $users = User::query()
             ->whereIn('role', ['admin', 'staff'])
             ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
@@ -40,7 +41,8 @@ class UserController extends Controller
     public function store(UserRequest $request): RedirectResponse
     {
         $this->ensureAdmin();
-        User::create($request->validated());
+        $user = User::create($request->validated());
+        ActivityLogger::write('create', 'user', $user, null, $user->only(['id', 'name', 'email', 'role']));
 
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
     }
@@ -71,7 +73,9 @@ class UserController extends Controller
             unset($data['password']);
         }
 
+        $before = $user->only(['id', 'name', 'email', 'role']);
         $user->update($data);
+        ActivityLogger::write('update', 'user', $user, $before, $user->fresh()->only(['id', 'name', 'email', 'role']));
 
         return redirect()->route('users.index')->with('success', 'User berhasil diperbarui.');
     }
@@ -93,7 +97,9 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'User tidak dapat dihapus karena tercatat pada riwayat transaksi.');
         }
 
+        $before = $user->only(['id', 'name', 'email', 'role']);
         $user->delete();
+        ActivityLogger::write('delete', 'user', $user, $before, null);
 
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
     }

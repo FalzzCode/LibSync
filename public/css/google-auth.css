@@ -54,6 +54,7 @@
 .google-label { justify-self: center; font-size: 14px; }
 .google-arrow { justify-self: end; color: #719188; font-size: 17px; line-height: 1; }
 .login__google-note { margin: 13px 0 0; padding: 12px 14px; border: 1px solid #d7e9e0; border-radius: 11px; background: #e8f2ed; color: #496159; font-size: 12px; line-height: 1.55; }
+.login__google-note strong { color: #173d3a; }
 .login__divider { display: flex; align-items: center; gap: .75rem; margin: 1.35rem 0; color: var(--muted); font-size: .78rem; }
 .login__divider::before, .login__divider::after { content: ''; height: 1px; flex: 1; background: var(--line); }
 
@@ -74,6 +75,7 @@
 :root[data-theme="dark"] .login__form-wrapper { background: #10201c; }
 :root[data-theme="dark"] .login__form-intro > p:last-child { color: #b9cec5; }
 :root[data-theme="dark"] .login__google-note { border-color: #426b5d; background: #1b3b32; color: #c0d7ce; }
+:root[data-theme="dark"] .login__google-note strong { color: #effaf5; }
 :root[data-theme="dark"] .login__local-fallback { border-color: #426b5d; background: #1a2d27; }
 :root[data-theme="dark"] .login__local-icon { background: #29483f; color: #bde3d3; }
 :root[data-theme="dark"] .login__local-heading p { color: #b3c4bd; }

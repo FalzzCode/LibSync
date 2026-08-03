@@ -24,7 +24,7 @@
         <div class="search-field">
             <label class="sr-only" for="bookSearch">Cari koleksi</label>
             <span aria-hidden="true" data-solar-icon="solar:magnifer-linear">⌕</span>
-            <input id="bookSearch" type="search" name="search" placeholder="Cari judul, penulis, kategori, atau kode…" value="{{ $search }}" spellcheck="false">
+            <input id="bookSearch" type="search" name="search" placeholder="Cari judul, penulis, kategori, atau kode…" value="{{ $search }}" maxlength="120" spellcheck="false">
             <button class="search-field__clear" type="button" data-search-clear aria-label="Hapus pencarian" hidden><span data-solar-icon="solar:close-circle-linear" aria-hidden="true">×</span></button>
         </div>
         <div class="filter-bar__controls">

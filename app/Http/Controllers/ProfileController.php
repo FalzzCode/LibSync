@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class ProfileController extends Controller
 {
@@ -36,24 +37,37 @@ class ProfileController extends Controller
         $data = $request->validate($rules);
 
         $previousPhotoPath = $user->profile_photo_path;
+        $newPhotoPath = null;
 
         if ($request->hasFile('photo')) {
-            $data['profile_photo_path'] = $request->file('photo')->store('profile-photos', 'public');
+            $newPhotoPath = $request->file('photo')->store('profile-photos', 'public');
+            $data['profile_photo_path'] = $newPhotoPath;
         }
 
         unset($data['photo']);
-        DB::transaction(function () use ($user, $linkedMember, $data) {
-            $user->update($data);
+        try {
+            DB::transaction(function () use ($user, $linkedMember, $data) {
+                $user->update($data);
 
-            if ($user->role === 'student' && $linkedMember) {
-                $linkedMember->update([
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                ]);
+                if ($user->role === 'student' && $linkedMember) {
+                    $linkedMember->update([
+                        'name' => $data['name'],
+                        'email' => $data['email'],
+                    ]);
+                }
+            });
+        } catch (Throwable $exception) {
+            // The file is stored before the transaction so it can be served
+            // after commit. Remove it when the database update fails to avoid
+            // orphaned profile photos in long-lived storage.
+            if ($newPhotoPath) {
+                Storage::disk('public')->delete($newPhotoPath);
             }
-        });
 
-        if (isset($data['profile_photo_path']) && $previousPhotoPath && $previousPhotoPath !== $data['profile_photo_path']) {
+            throw $exception;
+        }
+
+        if ($newPhotoPath && $previousPhotoPath && $previousPhotoPath !== $newPhotoPath) {
             Storage::disk('public')->delete($previousPhotoPath);
         }
 

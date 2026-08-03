@@ -92,11 +92,11 @@
                     @endif
                     <button id="themeToggle" class="theme-toggle" type="button" aria-label="Aktifkan mode gelap" title="Ganti tema"><span aria-hidden="true">◐</span></button>
                 <div class="header__profile-wrap">
-                    <button class="header__profile" id="profileToggle" type="button" aria-expanded="false" aria-controls="profileDropdown">
+                    <button class="header__profile" id="profileToggle" type="button" aria-expanded="false" aria-haspopup="menu" aria-controls="profileDropdown">
                         @if (Auth::user()->profile_photo_path)<img class="avatar" src="{{ route('profile.photo', Auth::user()) }}?v={{ Auth::user()->updated_at?->timestamp }}" alt="">@elseif(Auth::user()->avatar_url)<img class="avatar" src="{{ Auth::user()->avatar_url }}" alt="">@else<span class="avatar" aria-hidden="true">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>@endif
                         <span class="header__profile-info"><strong>{{ Auth::user()->name }}</strong><small>{{ ucfirst(Auth::user()->role) }}</small></span><span aria-hidden="true">⌄</span>
                     </button>
-                    <div class="dropdown-menu" id="profileDropdown">
+                    <div class="dropdown-menu" id="profileDropdown" role="menu">
                         <p>Masuk sebagai <strong>{{ Auth::user()->email }}</strong></p>
                         <a class="dropdown-menu__profile" href="{{ route('profile.edit') }}">Pengaturan profil <span>→</span></a>
                         <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="dropdown-menu__logout">Keluar dari akun <span>→</span></button></form>

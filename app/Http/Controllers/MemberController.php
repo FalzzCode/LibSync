@@ -17,7 +17,7 @@ class MemberController extends Controller
     // Menampilkan daftar semua anggota
     public function index(Request $request): View
     {
-        $search = $request->string('search')->trim()->toString();
+        $search = $request->string('search')->trim()->substr(0, 120)->toString();
         $members = Member::with('user:id,name,email,profile_photo_path,avatar_url,updated_at')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -128,12 +128,14 @@ class MemberController extends Controller
 
         DB::transaction(function () use ($member) {
             $portalUser = $member->user;
+            $before = $member->toArray();
             $member->delete();
 
             // Akun portal hanya bermakna bila masih terhubung ke anggota aktif.
             if ($portalUser?->role === 'student') {
                 $portalUser->delete();
             }
+            ActivityLogger::write('delete', 'member', $member, $before, null);
         });
 
         return redirect()->route('members.index')->with('success', 'Anggota dan akun portalnya berhasil dihapus.');

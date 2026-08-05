@@ -89,6 +89,17 @@
                     </div>
                 </div>
 
+                <div class="import-template">
+                    <div>
+                        <strong>Mulai dari file siap pakai</strong>
+                        <p>Contoh anggota berbahasa Indonesia, tanpa kolom NIS.</p>
+                    </div>
+                    <a class="btn btn--secondary" href="{{ asset('templates/contoh-anggota.csv') }}" download>
+                        <span data-solar-icon="solar:download-linear" aria-hidden="true">↓</span>
+                        Unduh contoh CSV
+                    </a>
+                </div>
+
                 <details class="import-example">
                     <summary><span data-solar-icon="solar:code-square-linear" aria-hidden="true">⌘</span>Lihat contoh nama kolom CSV</summary>
                     <h4>Buku</h4>

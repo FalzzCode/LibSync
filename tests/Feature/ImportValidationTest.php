@@ -12,6 +12,18 @@ class ImportValidationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_halaman_impor_menyediakan_tautan_contoh_csv_anggota(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+
+        $this->actingAs($staff)
+            ->get(route('imports.create'))
+            ->assertOk()
+            ->assertSee('contoh-anggota.csv');
+
+        $this->assertFileExists(public_path('templates/contoh-anggota.csv'));
+    }
+
     public function test_impor_buku_menolak_stok_negatif(): void
     {
         $staff = User::factory()->create(['role' => 'staff']);

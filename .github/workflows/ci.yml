@@ -43,6 +43,7 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate --force
+          php artisan storage:link
 
       - name: Install frontend dependencies
         run: npm ci

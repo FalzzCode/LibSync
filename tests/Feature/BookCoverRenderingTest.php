@@ -84,4 +84,21 @@ class BookCoverRenderingTest extends TestCase
             ->assertSee('borrowing-detail__cover')
             ->assertSee('storage/books/detail-cover.jpg');
     }
+
+    public function test_cover_bawaan_buku_indonesia_ditampilkan_tanpa_upload_manual(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $book = Book::create([
+            'title' => 'Laut Bercerita',
+            'author' => 'Leila S. Chudori',
+            'book_code' => 'IND-001',
+            'category_id' => Category::create(['name' => 'Fiksi Indonesia'])->id,
+            'stock' => 1,
+        ]);
+
+        $this->actingAs($staff)
+            ->get(route('books.show', $book))
+            ->assertOk()
+            ->assertSee('https://cdn.gramedia.com/uploads/product-metas/c7zl00re93.jpg');
+    }
 }

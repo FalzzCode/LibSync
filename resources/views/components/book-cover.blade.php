@@ -8,7 +8,7 @@
 @php
     $title = $book?->title ?: 'Buku perpustakaan';
     $coverPath = $book?->cover_image;
-    $coverUrl = $coverPath ? $book->coverUrl() : null;
+    $coverUrl = $book?->coverUrl();
     $label = $alt ?: 'Cover '.$title;
 @endphp
 

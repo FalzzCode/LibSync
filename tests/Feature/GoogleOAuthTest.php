@@ -94,6 +94,30 @@ class GoogleOAuthTest extends TestCase
         $this->get(route('dashboard'))->assertOk();
     }
 
+    public function test_google_callback_accepts_long_google_avatar_urls(): void
+    {
+        $staff = User::factory()->create([
+            'role' => 'staff',
+            'email' => 'staff-avatar@example.test',
+            'google_id' => null,
+        ]);
+        $avatarUrl = 'https://lh3.googleusercontent.com/'.str_repeat('a', 700).'-s96-c';
+        $googleUser = Mockery::mock();
+        $googleUser->shouldReceive('getId')->andReturn('google-staff-avatar-1');
+        $googleUser->shouldReceive('getEmail')->andReturn($staff->email);
+        $googleUser->shouldReceive('getAvatar')->andReturn($avatarUrl);
+        $driver = Mockery::mock();
+        $driver->shouldReceive('stateless')->once()->andReturnSelf();
+        $driver->shouldReceive('user')->once()->andReturn($googleUser);
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($driver);
+
+        $this->withCookie('libsync-google-oauth-state', 'valid-google-state')
+            ->get(route('auth.google.callback', ['state' => 'valid-google-state']))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertSame($avatarUrl, $staff->fresh()->avatar_url);
+    }
+
     public function test_first_time_google_sign_in_creates_a_student_profile_without_nis(): void
     {
         $googleUser = Mockery::mock();

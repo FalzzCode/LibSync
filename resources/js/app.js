@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const routes = {
             '/dashboard': 'dashboard', '/books': 'books', '/book-copies': 'copies', '/members': 'members',
             '/categories': 'categories', '/borrowings': 'borrowings', '/warnings': 'warnings', '/fines': 'fines',
-            '/imports': 'imports', '/users': 'users', '/developer': 'developer', '/student': 'dashboard', '/student/catalog': 'catalog',
+            '/imports': 'imports', '/users': 'users', '/developer': 'developer', '/student/dashboard': 'student-dashboard', '/student/catalog': 'catalog',
         };
         return routes[pathname] || (pathname.endsWith('/create') || pathname.endsWith('/edit') ? 'form' : 'table');
     };

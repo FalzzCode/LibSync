@@ -76,3 +76,44 @@ html { scroll-behavior: auto; }
     body { background: var(--canvas); }
     .hero-card, .student-hero, .stat-card, .transaction-stats article, .table-card, .form-card, .detail-card, .recent-panel, .insight-card, .action-panel { box-shadow: none; }
 }
+
+/* The student portal has a different first screen from staff/admin. Keep its
+   loading state aligned with the real hero, summary cards, and two-column body. */
+.page-loader__student-dashboard { display: none; margin-top: 26px; }
+.page-loader--student-dashboard .page-loader__label,
+.page-loader--student-dashboard .page-loader__title,
+.page-loader--student-dashboard .page-loader__filters,
+.page-loader--student-dashboard .page-loader__table { display: none; }
+.page-loader--student-dashboard .page-loader__student-dashboard { display: block; }
+.loader-student__hero { min-height: 292px; padding: 42px 46px; border-radius: 22px; background: #24554e; display: grid; align-content: start; gap: 14px; }
+.loader-student__hero i,
+.loader-student__hero b,
+.loader-student__hero em,
+.loader-student__hero span,
+.loader-student__stats i,
+.loader-student__body i { display: block; border-radius: 8px; background: #75a095; }
+.loader-student__hero i { width: 130px; height: 12px; }
+.loader-student__hero b { width: min(430px, 75%); height: 66px; background: #d7e5df; }
+.loader-student__hero em { width: min(470px, 82%); height: 34px; margin-top: 4px; background: #75a095; }
+.loader-student__hero span { width: 146px; height: 42px; margin-top: 8px; background: #eff5f2; }
+.loader-student__stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 18px; }
+.loader-student__stats i { min-height: 126px; background: #dce8e3; }
+.loader-student__body { display: grid; grid-template-columns: 1.6fr .9fr; gap: 16px; margin-top: 16px; }
+.loader-student__body i { min-height: 270px; background: #dce8e3; }
+
+@media (max-width: 760px) {
+    .page-loader__student-dashboard { margin-top: 18px; }
+    .loader-student__hero { min-height: 328px; padding: 27px 24px; }
+    .loader-student__hero b { width: 78%; height: 105px; }
+    .loader-student__hero em { width: 88%; height: 48px; }
+    .loader-student__stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .loader-student__stats i:last-child { grid-column: 1 / -1; min-height: 102px; }
+    .loader-student__body { grid-template-columns: 1fr; gap: 13px; }
+    .loader-student__body i { min-height: 250px; }
+    .loader-student__body i:last-child { min-height: 160px; }
+}
+
+@media (max-width: 380px) {
+    .loader-student__stats { grid-template-columns: 1fr; }
+    .loader-student__stats i:last-child { grid-column: auto; }
+}

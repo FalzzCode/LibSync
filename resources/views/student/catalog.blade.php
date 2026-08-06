@@ -20,10 +20,20 @@
         @forelse($books as $book)
         <article class="catalog-card student-book-card">
             <x-book-cover :book="$book" size="student-catalog" class="catalog-card__cover" />
+            @php($borrowStatus = $activeBorrowingsByBook->get($book->id))
             <div class="student-book-card__content"><p>{{ $book->category->name }}</p><h2>{{ $book->title }}</h2><small>{{ $book->author }}</small>
                 <div class="student-book-card__footer"><span class="badge {{ $book->stock > 0 ? 'badge--success' : 'badge--danger' }}">{{ $book->stock > 0 ? $book->stock.' tersedia' : 'Stok habis' }}</span>
-                @if($book->stock > 0)<form method="POST" action="{{ route('student.borrowings.store',$book) }}">@csrf<button class="btn btn--primary" type="submit">Ajukan pinjam <span aria-hidden="true">→</span></button></form>
-                @else<form method="POST" action="{{ route('student.reservations.store',$book) }}">@csrf<button class="btn btn--secondary" type="submit">Daftar tunggu</button></form>@endif</div>
+                @if($borrowStatus === 'requested')
+                    <span class="student-book-card__status-note">Menunggu persetujuan</span>
+                @elseif($borrowStatus === 'borrowed')
+                    <a class="btn btn--secondary" href="{{ route('student.dashboard') }}#pinjaman">Lihat pinjaman</a>
+                @elseif($borrowStatus === 'return_requested')
+                    <span class="student-book-card__status-note">Pengembalian diproses</span>
+                @elseif($book->stock > 0)
+                    <form method="POST" action="{{ route('student.borrowings.store',$book) }}">@csrf<button class="btn btn--primary" type="submit">Ajukan pinjam <span aria-hidden="true">→</span></button></form>
+                @else
+                    <form method="POST" action="{{ route('student.reservations.store',$book) }}">@csrf<button class="btn btn--secondary" type="submit">Daftar tunggu</button></form>
+                @endif</div>
             </div>
         </article>
         @empty

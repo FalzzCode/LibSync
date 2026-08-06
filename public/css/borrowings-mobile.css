@@ -1,9 +1,10 @@
 @media (max-width: 760px) {
     .borrowings-table-card .table-wrapper { overflow-x: hidden; }
     .borrowings-table-card .data-table { table-layout: fixed; }
-    .borrowings-table-card .data-table th:nth-child(1) { width: 43%; }
-    .borrowings-table-card .data-table th:nth-child(3) { width: 29%; }
-    .borrowings-table-card .data-table th:nth-child(4) { width: 28%; }
+    .borrowings-table-card .data-table th:nth-child(1) { width: 37%; }
+    .borrowings-table-card .data-table th:nth-child(3) { width: 24%; }
+    .borrowings-table-card .data-table th:nth-child(4) { width: 27%; }
+    .borrowings-table-card .data-table th:nth-child(6) { width: 12%; }
     .borrowings-table-card .data-table th:nth-child(3),
     .borrowings-table-card .data-table td:nth-child(3),
     .borrowings-table-card .data-table th:nth-child(4),
@@ -11,13 +12,14 @@
     .borrowings-table-card .data-table th:nth-child(2),
     .borrowings-table-card .data-table td:nth-child(2),
     .borrowings-table-card .data-table th:nth-child(5),
-    .borrowings-table-card .data-table td:nth-child(5),
+    .borrowings-table-card .data-table td:nth-child(5) { display: none; }
     .borrowings-table-card .data-table th:nth-child(6),
-    .borrowings-table-card .data-table td:nth-child(6) { display: none; }
+    .borrowings-table-card .data-table td:nth-child(6) { display: table-cell; text-align: right; }
     .borrowings-table-card .data-table th,
     .borrowings-table-card .data-table td { padding: 11px 8px; white-space: normal; }
     .borrowings-table-card .data-table td:first-child { overflow: hidden; }
     .borrowings-table-card .data-table td:first-child strong,
     .borrowings-table-card .data-table td:first-child small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .borrowings-table-card .badge { font-size: 10px; padding: 4px 6px; }
+    .borrowings-table-card .data-table td:nth-child(6) .icon-button { width: 32px; height: 32px; }
 }

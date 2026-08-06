@@ -22,8 +22,34 @@ class StudentPortalTest extends TestCase
         $student = User::factory()->create(['role' => 'student']);
         Member::create(['user_id' => $student->id, 'name' => 'Siswa Portal', 'phone' => '08123456789']);
 
-        $this->actingAs($student)->get(route('student.dashboard'))->assertOk()->assertSee('Siswa Portal')->assertSee('Portal siswa');
+        $this->actingAs($student)->get(route('student.dashboard'))->assertOk()->assertSee('Siswa Portal')->assertSee('Portal siswa')->assertSee('page-loader--student-dashboard', false);
         $this->actingAs($student)->get(route('books.index'))->assertForbidden();
+    }
+
+    public function test_katalog_siswa_menunjukkan_status_pinjaman_aktif_dan_mencegah_pengajuan_ganda(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $member = Member::create(['user_id' => $student->id, 'name' => 'Siswa Katalog', 'phone' => '08123456783']);
+        $book = Book::create([
+            'title' => 'Buku Sudah Diajukan',
+            'author' => 'Penulis',
+            'category_id' => Category::create(['name' => 'Katalog Portal'])->id,
+            'stock' => 1,
+        ]);
+        Borrowing::create([
+            'member_id' => $member->id,
+            'book_id' => $book->id,
+            'user_id' => $student->id,
+            'borrowed_at' => today(),
+            'due_date' => today()->addDays(7),
+            'status' => 'requested',
+            'requested_at' => now(),
+        ]);
+
+        $this->actingAs($student)->get(route('student.catalog'))
+            ->assertOk()
+            ->assertSee('Menunggu persetujuan')
+            ->assertDontSee('Ajukan pinjam');
     }
 
     public function test_petugas_dapat_menyimpan_anggota_dengan_akun_portal(): void

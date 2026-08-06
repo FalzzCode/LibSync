@@ -17,16 +17,16 @@
     <link rel="stylesheet" href="{{ asset('css/mobile-viewport-fix.css') }}?v=20260801-2">
     <link rel="stylesheet" href="{{ asset('css/table-scrollbar-cleanup.css') }}?v=20260801-1">
     <link rel="stylesheet" href="{{ asset('css/members-mobile.css') }}?v=20260801-3">
-    <link rel="stylesheet" href="{{ asset('css/borrowings-mobile.css') }}?v=20260801-1">
+    <link rel="stylesheet" href="{{ asset('css/borrowings-mobile.css') }}?v=20260806-1">
     <link rel="stylesheet" href="{{ asset('css/book-cover.css') }}?v=20260802-3">
     <link rel="stylesheet" href="{{ asset('css/borrowing-detail.css') }}?v=20260802-3">
     <link rel="stylesheet" href="{{ asset('css/profile.css') }}?v=20260802-1">
     <link rel="stylesheet" href="{{ asset('css/solar-icons.css') }}?v=20260802-3">
     <link rel="stylesheet" href="{{ asset('css/branding.css') }}?v=20260801-2">
-    <link rel="stylesheet" href="{{ asset('css/student-portal.css') }}?v=20260802-1">
+    <link rel="stylesheet" href="{{ asset('css/student-portal.css') }}?v=20260806-1">
     <link rel="stylesheet" href="{{ asset('css/dark-mode.css') }}?v=20260802-2">
     <link rel="stylesheet" href="{{ asset('css/mobile-ux.css') }}?v=20260801-2">
-    <link rel="stylesheet" href="{{ asset('css/motion-performance.css') }}?v=20260801-9">
+    <link rel="stylesheet" href="{{ asset('css/motion-performance.css') }}?v=20260806-1">
     <link rel="stylesheet" href="{{ asset('css/action-center.css') }}?v=20260801-2">
     <link rel="stylesheet" href="{{ asset('css/circulation-dashboard.css') }}?v=20260802-3">
     <link rel="stylesheet" href="{{ asset('css/imports.css') }}?v=20260803-1">
@@ -125,7 +125,8 @@
     <div class="modal-overlay" id="modalOverlay" hidden aria-hidden="true"><section class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalMessage"><h2 id="modalTitle">Konfirmasi tindakan</h2><p id="modalMessage"></p><div class="modal__actions"><button class="btn btn--secondary" id="modalCancel" type="button">Batal</button><button class="btn btn--danger" id="modalConfirm" type="button">Hapus</button></div></section></div>
     @php
         $loaderType = match (true) {
-            request()->routeIs('dashboard', 'student.dashboard') => 'dashboard',
+            request()->routeIs('student.dashboard') => 'student-dashboard',
+            request()->routeIs('dashboard') => 'dashboard',
             request()->routeIs('books.index') => 'books',
             request()->routeIs('book-copies.index') => 'copies',
             request()->routeIs('members.index') => 'members',
@@ -149,6 +150,7 @@
                 <section class="page-loader__filters"><i></i><b></b><b></b></section>
                 <section class="page-loader__table"><header><i></i><i></i><i></i><i></i></header><div><i></i><i></i><i></i><i></i></div><div><i></i><i></i><i></i><i></i></div><div><i></i><i></i><i></i><i></i></div><div><i></i><i></i><i></i><i></i></div></section>
                 <section class="page-loader__dashboard"><div class="page-loader__hero"><div></div><div></div><div></div></div><div class="page-loader__stats"><i></i><i></i><i></i><i></i></div><div class="page-loader__panel"><i></i><i></i></div></section>
+                <section class="page-loader__student-dashboard"><div class="loader-student__hero"><i></i><b></b><em></em><span></span></div><div class="loader-student__stats"><i></i><i></i><i></i></div><div class="loader-student__body"><i></i><i></i></div></section>
                 <section class="page-loader__form"><div class="page-loader__form-head"></div><div class="page-loader__form-grid"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="page-loader__form-actions"><i></i><i></i></div></section>
                 <section class="page-loader__detail"><i></i><div><b></b><b></b><b></b><b></b><b></b></div></section>
                 <section class="page-loader__catalog"><i></i><i></i><i></i><i></i></section>

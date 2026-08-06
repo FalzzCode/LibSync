@@ -130,6 +130,7 @@
 .student-book-card small { color:var(--muted);font-size:12px; }
 .student-book-card__footer { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-top:auto;padding-top:16px; }
 .student-book-card__footer .btn { min-height:35px;padding-inline:10px;font-size:11px;white-space:nowrap; }
+.student-book-card__status-note { max-width:12ch;color:var(--muted);font-size:10px;line-height:1.25;text-align:right; }
 .student-catalog-empty { grid-column:1/-1;border:1px dashed #b8ccc4;border-radius:16px;background:var(--surface); }
 :root[data-theme="dark"] .student-catalog-search { background:#1d2d29;border-color:#426158; }
 @media (max-width:960px) { .student-book-catalog { grid-template-columns:repeat(2,minmax(0,1fr)); } }

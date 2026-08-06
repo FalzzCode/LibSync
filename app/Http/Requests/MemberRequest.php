@@ -40,7 +40,14 @@ class MemberRequest extends FormRequest
             'nisn' => ['nullable', 'string', 'max:50', Rule::unique('anggota', 'nisn')->ignore($this->route('member'))],
             'major' => ['nullable', 'string', 'max:100'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('anggota', 'email')->ignore($this->route('member'))],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('anggota', 'email')
+                    ->where(fn ($query) => $query->whereNull('deleted_at'))
+                    ->ignore($this->route('member')),
+            ],
             'entry_year' => ['nullable', 'integer', 'between:1900,'.now()->year],
             'account_email' => ['nullable', 'email', 'max:255', Rule::unique('pengguna', 'email')->ignore($this->route('member')?->user_id)],
             'account_password' => ['nullable', 'string', 'min:8', 'required_with:account_email'],
@@ -64,6 +71,8 @@ class MemberRequest extends FormRequest
             'phone.regex' => 'Nomor telepon hanya boleh berisi angka, spasi, dan tanda + ( ) -.',
             'entry_year.integer' => 'Tahun masuk harus berupa angka.',
             'entry_year.between' => 'Tahun masuk harus berada antara 1900 dan '.now()->year.'.',
+            'email.unique' => 'Email Google sudah dipakai anggota aktif. Jika email ada di arsip, pulihkan data anggota lama.',
+            'account_email.unique' => 'Email login sudah dipakai akun lain.',
         ];
     }
 }

@@ -40,14 +40,48 @@ class MemberController extends Controller
         return view('members.create');
     }
 
+    // Menampilkan anggota yang sudah diarsipkan agar admin atau petugas dapat memulihkannya.
+    public function archived(): View
+    {
+        $members = Member::onlyTrashed()
+            ->with('user:id,name,email')
+            ->latest('deleted_at')
+            ->get();
+
+        return view('members.archived', compact('members'));
+    }
+
     // Menyimpan anggota baru
     public function store(MemberRequest $request): RedirectResponse
     {
         $data = $request->validated();
         $activationCode = null;
         $activationMember = null;
+        $restoredMember = null;
 
-        DB::transaction(function () use ($data, &$activationCode, &$activationMember) {
+        DB::transaction(function () use ($data, &$activationCode, &$activationMember, &$restoredMember) {
+            $archivedMember = ! empty($data['email'])
+                ? Member::withTrashed()
+                    ->where('email', $data['email'])
+                    ->lockForUpdate()
+                    ->first()
+                : null;
+
+            if ($archivedMember?->trashed()) {
+                $before = $archivedMember->toArray();
+                $archivedMember->restore();
+                $archivedMember->update(collect($data)->except(['account_email', 'account_password'])->all());
+
+                if (! $archivedMember->user_id && ($data['account_email'] ?? null)) {
+                    $archivedMember->update(['user_id' => $this->createStudentAccount($data)?->id]);
+                }
+
+                $restoredMember = $archivedMember->fresh();
+                ActivityLogger::write('restore', 'member', $restoredMember, $before, $restoredMember->toArray());
+
+                return;
+            }
+
             $user = $this->createStudentAccount($data);
             $member = Member::create(collect($data)->except(['account_email', 'account_password'])->all() + ['user_id' => $user?->id]);
             if (! $user && $member->nis) {
@@ -57,11 +91,29 @@ class MemberController extends Controller
             ActivityLogger::write('create', 'member', $member, null, $member->toArray());
         });
 
+        if ($restoredMember) {
+            return redirect()->route('members.index')->with('success', "Anggota {$restoredMember->name} berhasil dipulihkan.");
+        }
+
         $response = redirect()->route('members.index')->with('success', 'Anggota berhasil ditambahkan.');
 
         return $activationCode
             ? $response->with('activation_code', $activationCode)->with('activation_member_name', $activationMember->name)->with('activation_expires_at', $activationMember->activation_expires_at)
             : $response;
+    }
+
+    // Memulihkan anggota yang diarsipkan. Admin dan petugas sama-sama boleh melakukannya.
+    public function restore(Member $member): RedirectResponse
+    {
+        if (! $member->trashed()) {
+            return redirect()->route('members.index')->with('error', 'Anggota tersebut sudah aktif.');
+        }
+
+        $before = $member->toArray();
+        $member->restore();
+        ActivityLogger::write('restore', 'member', $member, $before, $member->fresh()->toArray());
+
+        return redirect()->route('members.index')->with('success', "Anggota {$member->name} berhasil dipulihkan.");
     }
 
     // Menampilkan form edit anggota

@@ -11,7 +11,10 @@
             <h1>Daftar anggota</h1>
             <p>Kelola data pembaca dan status akun perpustakaan.</p>
         </div>
-        <a class="btn btn--primary" href="{{ route('members.create') }}">+ Tambah anggota</a>
+        <div class="page-header__actions">
+            <a class="btn btn--secondary" href="{{ route('members.archived') }}">Arsip anggota</a>
+            <a class="btn btn--primary" href="{{ route('members.create') }}">+ Tambah anggota</a>
+        </div>
     </div>
 
     <form class="filter-bar" method="GET" action="{{ route('members.index') }}">

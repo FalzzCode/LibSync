@@ -86,8 +86,12 @@ Route::middleware('auth')->group(function () {
         Route::get('imports', [ImportController::class, 'create'])->name('imports.create');
         Route::post('imports', [ImportController::class, 'store'])->name('imports.store');
 
+        Route::get('members/archived', [MemberController::class, 'archived'])->name('members.archived');
         Route::resource('members', MemberController::class)->except(['show']);
         Route::post('members/{member}/activation-code', [MemberController::class, 'regenerateActivationCode'])->name('members.activation-code');
+        Route::patch('members/{member}/restore', [MemberController::class, 'restore'])
+            ->withTrashed()
+            ->name('members.restore');
     });
 
     Route::middleware('role:student')->group(function () {

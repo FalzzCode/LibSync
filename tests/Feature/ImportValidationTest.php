@@ -24,6 +24,18 @@ class ImportValidationTest extends TestCase
         $this->assertFileExists(public_path('templates/contoh-anggota.csv'));
     }
 
+    public function test_halaman_impor_menyediakan_tautan_contoh_csv_buku_indonesia(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+
+        $this->actingAs($staff)
+            ->get(route('imports.create'))
+            ->assertOk()
+            ->assertSee('contoh-buku.csv');
+
+        $this->assertFileExists(public_path('templates/contoh-buku.csv'));
+    }
+
     public function test_impor_buku_menolak_stok_negatif(): void
     {
         $staff = User::factory()->create(['role' => 'staff']);
@@ -36,6 +48,30 @@ class ImportValidationTest extends TestCase
 
         $this->assertDatabaseCount('buku', 0);
         $this->assertDatabaseMissing('buku', ['title' => 'Buku Rusak']);
+    }
+
+    public function test_impor_contoh_buku_indonesia_menyimpan_semua_baris_valid(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $csv = UploadedFile::fake()->createWithContent(
+            'contoh-buku.csv',
+            file_get_contents(public_path('templates/contoh-buku.csv')),
+        );
+
+        $this->actingAs($staff)->post(route('imports.store'), [
+            'type' => 'books',
+            'file' => $csv,
+        ])->assertRedirect(route('imports.create'))
+            ->assertSessionHas('success', '15 data berhasil diimpor.');
+
+        $this->assertDatabaseCount('buku', 15);
+        $this->assertDatabaseHas('buku', [
+            'title' => 'Laut Bercerita',
+            'author' => 'Leila S. Chudori',
+            'publisher' => 'KPG',
+            'publication_year' => 2025,
+            'stock' => 5,
+        ]);
     }
 
     public function test_impor_anggota_memperbarui_nis_yang_sudah_ada_tanpa_menghapus_email_lama(): void

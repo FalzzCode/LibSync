@@ -92,11 +92,22 @@
                 <div class="import-template">
                     <div>
                         <strong>Mulai dari file siap pakai</strong>
+                        <p>Contoh buku Indonesia dengan kolom yang sudah cocok untuk LibSync.</p>
+                    </div>
+                    <a class="btn btn--secondary" href="{{ asset('templates/contoh-buku.csv') }}" download>
+                        <span data-solar-icon="solar:download-linear" aria-hidden="true">↓</span>
+                        Unduh contoh buku
+                    </a>
+                </div>
+
+                <div class="import-template">
+                    <div>
+                        <strong>Contoh data anggota</strong>
                         <p>Contoh anggota berbahasa Indonesia, tanpa kolom NIS.</p>
                     </div>
                     <a class="btn btn--secondary" href="{{ asset('templates/contoh-anggota.csv') }}" download>
                         <span data-solar-icon="solar:download-linear" aria-hidden="true">↓</span>
-                        Unduh contoh CSV
+                        Unduh contoh anggota
                     </a>
                 </div>
 

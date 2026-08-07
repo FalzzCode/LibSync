@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="{{ asset('css/collection-toolbar.css') }}?v=20260801-3">
     <link rel="stylesheet" href="{{ asset('css/mobile-viewport-fix.css') }}?v=20260801-2">
     <link rel="stylesheet" href="{{ asset('css/table-scrollbar-cleanup.css') }}?v=20260801-1">
-    <link rel="stylesheet" href="{{ asset('css/members-mobile.css') }}?v=20260801-3">
+    <link rel="stylesheet" href="{{ asset('css/members-mobile.css') }}?v=20260807-1">
     <link rel="stylesheet" href="{{ asset('css/borrowings-mobile.css') }}?v=20260806-1">
     <link rel="stylesheet" href="{{ asset('css/book-cover.css') }}?v=20260802-3">
     <link rel="stylesheet" href="{{ asset('css/borrowing-detail.css') }}?v=20260802-3">

@@ -57,6 +57,7 @@ class MemberAccountCleanupTest extends TestCase
         $this->actingAs($staff)
             ->get(route('members.archived'))
             ->assertOk()
+            ->assertSee('members-archived-table-card')
             ->assertSee('Siswa Diarsipkan')
             ->assertSee('Pulihkan');
     }

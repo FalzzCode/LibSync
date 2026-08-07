@@ -15,7 +15,7 @@
         <a class="btn btn--primary" href="{{ route('members.create') }}">+ Tambah anggota</a>
     </div>
 
-    <div class="table-card">
+    <div class="table-card members-archived-table-card">
         <div class="table-card__meta"><span>{{ $members->count() }} anggota diarsipkan</span></div>
         <div class="table-wrapper">
             <table class="data-table">

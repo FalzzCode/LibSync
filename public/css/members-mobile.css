@@ -37,4 +37,36 @@
     .members-table-card .icon-button { width: 30px; height: 30px; }
     .members-table-card .empty-state { padding: 28px 14px; }
     :root[data-theme="dark"] .members-table-card .data-table tr { background: #22342f; }
+
+    /* Kolom aksi arsip adalah kolom keempat, yang disembunyikan oleh
+       responsive.css untuk tabel umum. Di HP, ubah arsip menjadi kartu
+       sederhana agar tombol Pulihkan tetap terlihat dan mudah ditekan. */
+    .members-archived-table-card .table-wrapper { overflow: visible; }
+    .members-archived-table-card .data-table,
+    .members-archived-table-card .data-table tbody,
+    .members-archived-table-card .data-table tr,
+    .members-archived-table-card .data-table td { display: block; width: 100%; }
+    .members-archived-table-card .data-table thead { display: none; }
+    .members-archived-table-card .data-table tbody { padding: 8px; }
+    .members-archived-table-card .data-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+    .members-archived-table-card .data-table tr + tr { margin-top: 8px; }
+    .members-archived-table-card .data-table td { padding: 0; border: 0; }
+    .members-archived-table-card .data-table td:nth-child(2),
+    .members-archived-table-card .data-table td:nth-child(3) { display: none; }
+    .members-archived-table-card .data-table td:nth-child(4) {
+        display: block;
+        width: auto;
+    }
+    .members-archived-table-card .data-table td:nth-child(4) form { margin: 0; }
+    .members-archived-table-card .data-table td:nth-child(4) .btn { white-space: nowrap; }
+    :root[data-theme="dark"] .members-archived-table-card .data-table tr { background: #22342f; }
 }
